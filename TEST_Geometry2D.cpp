@@ -585,7 +585,7 @@ public:
 int main()
 {
 	Test_Geometry2D demo;
-	if (demo.Construct(512, 480, 2, 2, false, true, false))
+	if (demo.Construct(512, 480, 2, 2))
 		demo.Start();
 	return 0;
 }

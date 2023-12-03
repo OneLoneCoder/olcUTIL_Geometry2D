@@ -38,6 +38,7 @@ public:
 	olc::QuickGUI::Manager guiManager;
 	olc::QuickGUI::CheckBox* guiShape1[5];
 	olc::QuickGUI::CheckBox* guiShape2[5];
+	olc::QuickGUI::CheckBox* guiEnvelopeShape[2];
 
 
 public: 
@@ -55,6 +56,9 @@ public:
 		guiShape2[2] = new olc::QuickGUI::CheckBox(guiManager, "Rectangle", false, { 190, 20 }, { 80, 16 });
 		guiShape2[3] = new olc::QuickGUI::CheckBox(guiManager, "Circle", false, { 280, 20 }, { 80, 16 });
 		guiShape2[4] = new olc::QuickGUI::CheckBox(guiManager, "Triangle", false, { 370, 20 }, { 80, 16 });
+
+		guiEnvelopeShape[0] = new olc::QuickGUI::CheckBox(guiManager, "Env Circle", false, { 10, 38 }, { 80, 16 });
+		guiEnvelopeShape[1] = new olc::QuickGUI::CheckBox(guiManager, "Env Rect", false, { 100, 38 }, { 80, 16 });
 
 
 		shapePoint1 = shapePoint2 = { 270.0f, 240.0f };
@@ -520,6 +524,54 @@ public:
 
 
 		DrawCircle(vClosest, 5, olc::GREEN);
+
+		if (guiEnvelopeShape[0]->bChecked)
+		{
+			circle<float> envelopingCircle;
+			switch (nShape2)
+			{
+			case Shapes::Point:
+				envelopingCircle = envelope_c(shapePoint2);
+				break;
+			case Shapes::Line:
+				envelopingCircle = envelope_c(shapeLine2);
+				break;
+			case Shapes::Rect:
+				envelopingCircle = envelope_c(shapeRect2);
+				break;
+			case Shapes::Circle:
+				envelopingCircle = envelope_c(shapeCircle2);
+				break;
+			case Shapes::Triangle:
+				envelopingCircle = envelope_c(shapeTriangle2);
+				break;
+			}
+			// using ceil to make sure it looks right
+			DrawCircle(envelopingCircle.pos, std::ceil(envelopingCircle.radius), olc::VERY_DARK_YELLOW);
+		}
+		if (guiEnvelopeShape[1]->bChecked)
+		{
+			rect<float> envelopingRect;
+			switch (nShape2)
+			{
+			case Shapes::Point:
+				envelopingRect = envelope_r(shapePoint2);
+				break;
+			case Shapes::Line:
+				envelopingRect = envelope_r(shapeLine2);
+				break;
+			case Shapes::Rect:
+				envelopingRect = envelope_r(shapeRect2);
+				break;
+			case Shapes::Circle:
+				envelopingRect = envelope_r(shapeCircle2);
+				break;
+			case Shapes::Triangle:
+				envelopingRect = envelope_r(shapeTriangle2);
+				break;
+			}
+			DrawRect(envelopingRect.pos, envelopingRect.size, olc::VERY_DARK_MAGENTA);
+		}
 
 		guiManager.Draw(this);
 

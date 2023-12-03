@@ -1074,7 +1074,6 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr circle<T1> envelope_c(const olc::v2d_generic<T1>& p)
 	{
-		// TODO:
 		return circle<T1>(p, 0);
 	}
 
@@ -1089,8 +1088,8 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr circle<T1> envelope_c(const rect<T1>& r)
 	{
-		// TODO:
-		return {};
+		// Construct the circle from the rectangle's diagonal
+		return envelope_c(line<T1>(r.pos, r.pos + r.size));
 	}
 
 	// Return circle that fully encapsulates a circle
@@ -1120,7 +1119,6 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr rect<T1> envelope_r(const olc::v2d_generic<T1>& p)
 	{
-		
 		return rect<T1>(p, { 0,0 });
 	}
 
@@ -1146,7 +1144,7 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr rect<T1> envelope_r(const circle<T1>& c)
 	{		
-		return rect<T1>(c - circle<T1>{c.radius, c.radius}, { c.radius * 2, c.radius * 2 });
+		return rect<T1>(c.pos - v2d_generic<T1>{c.radius, c.radius}, { c.radius * 2, c.radius * 2 });
 	}
 
 	// Return rectangle that fully encapsulates a triangle

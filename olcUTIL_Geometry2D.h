@@ -619,10 +619,34 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const rect<T1>& r, const olc::v_2d<T2>& p)
 	{
-		// This could be a "constrain" function hmmmm
-		// TODO: Not quite what i wanted, should restrain to boundary
-		return olc::v_2d<T1>{ std::clamp(p.x, r.pos.x, r.pos.x + r.size.x), std::clamp(p.y, r.pos.y, r.pos.y + r.size.y) };
-		
+		// Note: this algorithm can be reused for polygon
+		auto c1 = closest(r.top(), p);
+		auto c2 = closest(r.bottom(), p);
+		auto c3 = closest(r.left(), p);
+		auto c4 = closest(r.right(), p);
+
+		auto d1 = (c1 - p).mag2();
+		auto d2 = (c2 - p).mag2();
+		auto d3 = (c3 - p).mag2();
+		auto d4 = (c4 - p).mag2();
+
+		auto dmin = d1;
+		auto cmin = c1;
+
+		if (d2 < dmin) {
+			dmin = d2;
+			cmin = c2;
+		}
+		if (d3 < dmin) {
+			dmin = d3;
+			cmin = c3;
+		}
+		if (d4 < dmin) {
+			dmin = d4;
+			cmin = c4;
+		}
+
+		return cmin;
 	}
 
 	// Returns closest point on triangle to point

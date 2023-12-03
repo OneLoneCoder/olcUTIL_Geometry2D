@@ -49,7 +49,7 @@
 
 	Author
 	~~~~~~
-	David Barr, aka javidx9, ©OneLoneCoder 2019, 2020, 2021, 2022
+	David Barr, aka javidx9, Â©OneLoneCoder 2019, 2020, 2021, 2022
 
 	Changes:
 	v1.01:		+Made constants inline
@@ -550,8 +550,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const line<T1>& l1, const line<T2>& l2)
 	{
-		// TODO: 
-		return false;
+		float uA = ((l2.end.x-l2.start.x)*(l1.start.y-l2.start.y) - (l2.end.y-l2.start.y)*(l1.start.x-l2.start.x)) / ((l2.end.y-l2.start.y)*(l1.end.x-l1.start.x) - (l2.end.x-l2.start.x)*(l1.end.y-l1.start.y));
+		float uB = ((l1.end.x-l1.start.x)*(l1.start.y-l2.start.y) - (l1.end.y-l1.start.y)*(l1.start.x-l2.start.x)) / ((l2.end.y-l2.start.y)*(l1.end.x-l1.start.x) - (l2.end.x-l2.start.x)*(l1.end.y-l1.start.y));
+		return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1;
 	}
 
 	// Check if rectangle overlaps line segment
@@ -559,11 +560,10 @@ namespace olc::utils::geom2d
 	inline constexpr bool overlaps(const rect<T1>& r, const line<T2>& l)
 	{
 
-		return contains(r, l.start)
-			|| contains(r, l.end);
-
-		// TODO: This method is no good, it cant detect lines whose start and end
-		// points are outside the rectangle
+		return overlaps(r.left(),l)||
+			overlaps(r.top(),l)||
+			overlaps(r.bottom(),l)||
+			overlaps(r.right(),l);
 	}
 
 	// Check if circle overlaps line segment
@@ -624,8 +624,16 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v2d_generic<T2>> intersects(const rect<T1>& r, const line<T2>& l)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v2d_generic<T2>>intersections;
+		std::vector<olc::v2d_generic<T2>>result=intersects(r.left(),l);
+		if(result.size()>0)intersections.push_back(result[0]);
+		result=intersects(r.right(),l);
+		if(result.size()>0)intersections.push_back(result[0]);
+		result=intersects(r.top(),l);
+		if(result.size()>0)intersections.push_back(result[0]);
+		result=intersects(r.bottom(),l);
+		if(result.size()>0)intersections.push_back(result[0]);
+		return intersections;
 	}
 
 	// Get intersection points where circle intersects with line segment
@@ -764,8 +772,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v2d_generic<T2>> intersects(const line<T1>& l, const rect<T2>& r)
 	{
-		// TODO:
-		return {};
+		return intersects(r,l);
 	}
 
 	// Get intersection points where rectangle intersects with rectangle
@@ -1075,8 +1082,7 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr circle<T1> envelope_c(const line<T1>& l)
 	{
-		// TODO:
-		return {};
+		return {l.upoint(0.5),l.vector().mag()/2};
 	}
 
 	// Return circle that fully encapsulates a rectangle
@@ -1122,8 +1128,11 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr rect<T1> envelope_r(const line<T1>& l)
 	{
-		// TODO:
-		return {};
+		T1 min_x=std::min(l.start.x,l.end.x);
+		T1 min_y=std::min(l.start.y,l.end.y);
+		T1 size_x=std::abs(l.start.x-l.end.x);
+		T1 size_y=std::abs(l.start.x-l.end.x);
+		return {{min_x,min_y},{size_x,size_y}};
 	}
 
 	// Return rectangle that fully encapsulates a rectangle
@@ -1137,7 +1146,7 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr rect<T1> envelope_r(const circle<T1>& c)
 	{		
-		return rect<T1>(c - {c.radius, c.radius}, { c.radius * 2, c.radius * 2 });
+		return rect<T1>(c - circle<T1>{c.radius, c.radius}, { c.radius * 2, c.radius * 2 });
 	}
 
 	// Return rectangle that fully encapsulates a triangle

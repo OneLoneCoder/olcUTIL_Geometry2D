@@ -1,0 +1,202 @@
+# require version 3.10 or higher
+cmake_minimum_required(VERSION 3.10)
+
+#
+# Project
+#
+#   - dictates the output executable filename
+#
+project(olcUTIL_Geometry2D)
+
+# detect emscripten environment
+if (${CMAKE_CXX_COMPILER} MATCHES ".*em[+][+]")
+    set(EMSCRIPTEN TRUE)
+else()
+    set(EMSCRIPTEN FALSE)
+endif()
+
+# Set C++ Standards
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# output html for emscripten
+if (EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX .html)
+endif (EMSCRIPTEN)
+
+# Directories
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
+# Source Files are Curated Here
+# Source Files are Curated Here
+file( GLOB APP_SOURCES ${CMAKE_SOURCE_DIR}/*.cpp )
+
+foreach( testSourceFile ${APP_SOURCES} )
+
+    get_filename_component( testName ${testSourceFile} NAME_WE )
+    add_executable( ${testName} ${testSourceFile} )
+
+    # OpenGL
+    if (NOT EMSCRIPTEN)
+        set(OpenGL_GL_PREFERENCE LEGACY)
+        find_package(OpenGL REQUIRED)
+        include_directories(${OpenGL_INCLUDE_DIRS})
+        target_link_libraries(${testName} ${OpenGL_LIBRARIES} OpenGL::GL)
+    endif (NOT EMSCRIPTEN)
+
+    # Apple Specifics
+    if (APPLE AND NOT EMSCRIPTEN)
+
+        # Carbon
+        FIND_LIBRARY(CARBON_LIBRARY Carbon)
+        target_link_libraries(${testName} ${CARBON_LIBRARY})
+
+        # GLUT
+        find_package(GLUT REQUIRED)
+        target_link_libraries(${testName} ${GLUT_LIBRARIES})
+
+    endif (APPLE AND NOT EMSCRIPTEN)
+        
+    # Linux Specifics
+    if (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+
+        # X11
+        find_package(X11 REQUIRED)
+        target_link_libraries(${testName} ${X11_LIBRARIES})
+
+        include_directories(${X11_INCLUDE_DIRS})
+
+    endif (UNIX AND NOT APPLE AND NOT EMSCRIPTEN)
+
+    # UNIX or UNIX-like (Linux, MacOS, MSYS2, Cygwin, etc)
+    if (UNIX)
+        
+        # Threads
+        if (NOT EMSCRIPTEN)
+            find_package(Threads REQUIRED)
+            target_link_libraries(${testName} ${Threads_LIBRARIES})
+            
+            include_directories(${Threads_INCLUDE_DIRS})
+        endif (NOT EMSCRIPTEN)
+        
+        # PNG
+        if (EMSCRIPTEN)
+            execute_process(COMMAND embuilder build libpng OUTPUT_QUIET)
+            execute_process(COMMAND embuilder build zlib OUTPUT_QUIET)
+        endif (EMSCRIPTEN)
+        
+        find_package(PNG REQUIRED)
+        target_link_libraries(${testName} ${PNG_LIBRARIES})
+        include_directories(${PNG_INCLUDE_DIRS})
+
+        if (NOT APPLE AND NOT MINGW AND NOT CYGWIN)
+            find_package(OpenAL REQUIRED)
+            target_link_libraries(${testName} ${OPENAL_LIBRARY})
+            include_directories(${OPENAL_INCLUDE_DIRS})
+            target_compile_definitions(${testName} PUBLIC USE_OPENAL)
+        endif (NOT APPLE AND NOT MINGW AND NOT CYGWIN)
+        
+        set_target_properties(${testName} PROPERTIES COMPILE_FLAGS "-ggdb3 -Og")
+        
+    endif (UNIX)
+
+    # Windows Specifics
+    if (WIN32 AND NOT EMSCRIPTEN)
+        
+        # We need to specify the output for each configuration to make it work
+        # on Visual Studio solutions.
+        set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib")
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/lib")
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/bin")
+        set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/lib")
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/lib")
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/bin")
+        set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib")
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/lib")
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/bin")
+        set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_PROFILE "${CMAKE_BINARY_DIR}/lib")
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_PROFILE "${CMAKE_BINARY_DIR}/lib")
+        set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_PROFILE "${CMAKE_BINARY_DIR}/bin")
+
+        if (MSVC)
+            # set the startup project to the target executable instead of ALL_BUILD
+            set_property(
+                DIRECTORY
+                ${CMAKE_CURRENT_SOURCE_DIR}
+                PROPERTY
+                VS_STARTUP_PROJECT
+                ${testName}
+            )
+            
+            # set working directory for Visual Studio Debugger
+            set_target_properties(
+                ${testName} PROPERTIES
+                VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
+            )
+            
+            # set subsytem, console if HAS_TERMINAL is true. windows if not
+            if (HAS_TERMINAL)
+                target_link_options(${testName} PRIVATE "/SUBSYSTEM:CONSOLE")
+            else ()
+                target_link_options(${testName} PRIVATE "/SUBSYSTEM:WINDOWS")
+            endif ()
+
+        endif (MSVC)
+        
+        # prevent console launch when compiled with MinGW
+        if (MINGW)
+            if (NOT HAS_TERMINAL)
+                target_link_libraries(${testName} -mwindows)
+            endif (NOT HAS_TERMINAL)
+        endif (MINGW)
+
+        # GDI+
+        set(GDIPLUS_LIBRARY gdiplus)
+        target_link_libraries(${testName} ${GDIPLUS_LIBRARY})
+        
+        # Shlwapi
+        set(SHLWAPI_LIBRARY shlwapi)
+        target_link_libraries(${testName} ${SHLWAPI_LIBRARY})
+        
+        # Dwmapi
+        set(DWMAPI_LIBRARY dwmapi)
+        target_link_libraries(${testName} ${DWMAPI_LIBRARY})
+
+        # winmm
+        set(WINMM_LIBRARY winmm)
+        target_link_libraries(${testName} ${WINMM_LIBRARY})
+        
+    endif (WIN32 AND NOT EMSCRIPTEN)
+
+    # Emscripten specifics
+    if (EMSCRIPTEN)
+        target_link_options(
+            ${testName}
+            PRIVATE
+            -sALLOW_MEMORY_GROWTH=1
+            -sMAX_WEBGL_VERSION=2
+            -sMIN_WEBGL_VERSION=2
+            -sUSE_LIBPNG=1)
+    endif (EMSCRIPTEN)
+
+
+    # Not on Mac; Not with MSVC; Not with Emscripten
+    if (NOT APPLE AND NOT MSVC AND NOT EMSCRIPTEN)
+        
+        # C++ Filesystem
+        target_link_libraries(${testName} stdc++fs)
+
+    endif (NOT APPLE AND NOT MSVC AND NOT EMSCRIPTEN)
+
+endforeach()
+
+
+# set include directory
+if (EXISTS "${CMAKE_SOURCE_DIR}/${C_CXX_HEADERS_DIR}" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/${C_CXX_HEADERS_DIR}")
+    include_directories("${CMAKE_SOURCE_DIR}/${C_CXX_HEADERS_DIR}")
+endif (EXISTS "${CMAKE_SOURCE_DIR}/${C_CXX_HEADERS_DIR}" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/${C_CXX_HEADERS_DIR}")
+
+include_directories("${CMAKE_SOURCE_DIR}/third_party")

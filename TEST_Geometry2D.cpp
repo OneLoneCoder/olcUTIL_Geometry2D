@@ -2,10 +2,10 @@
 #define OLC_IGNORE_VEC2D
 
 #include "olcUTIL_Geometry2D.h"
-#include "olcPixelGameEngine.h"
+#include "third_party/olcPixelGameEngine.h"
 
 #define OLC_PGEX_QUICKGUI
-#include "olcPGEX_QuickGUI.h"
+#include "third_party/olcPGEX_QuickGUI.h"
 
 
 using namespace olc::utils::geom2d;

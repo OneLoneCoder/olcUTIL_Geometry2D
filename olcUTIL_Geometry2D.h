@@ -69,6 +69,7 @@
 #include <cmath>
 #include <vector>
 #include <algorithm>
+#include <cstdint>
 
 #ifndef OLC_V2D_TYPE
 #define OLC_V2D_TYPE

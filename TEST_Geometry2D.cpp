@@ -1,10 +1,13 @@
 #define OLC_PGE_APPLICATION
+#define OLC_IGNORE_VEC2D
+
+#include "olcUTIL_Geometry2D.h"
 #include "olcPixelGameEngine.h"
 
 #define OLC_PGEX_QUICKGUI
 #include "olcPGEX_QuickGUI.h"
 
-#include "olcUTIL_Geometry2D.h"
+
 using namespace olc::utils::geom2d;
 
 
@@ -547,7 +550,7 @@ public:
 				break;
 			}
 			// using ceil to make sure it looks right
-			DrawCircle(envelopingCircle.pos, std::ceil(envelopingCircle.radius), olc::VERY_DARK_YELLOW);
+			DrawCircle(envelopingCircle.pos, int(std::ceil(envelopingCircle.radius)), olc::VERY_DARK_YELLOW);
 		}
 		if (guiEnvelopeShape[1]->bChecked)
 		{

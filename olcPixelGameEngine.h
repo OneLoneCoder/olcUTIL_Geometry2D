@@ -276,7 +276,7 @@
 		  +DrawLineDecal()
 		  +Mouse Button Constants
 		  +Move Constructor for olc::Renderable
-		  +Polar/Cartesian conversion for v2d_generic
+		  +Polar/Cartesian conversion for v_2d
 		  +DrawRotatedStringDecal()/DrawRotatedStringPropDecal() (thanks Oso-Grande/Sopadeoso (PR #209))
 		  =Using olc::Renderable for layer surface
 		  +Major Mac and GLUT Update (thanks Mumflr)
@@ -306,8 +306,8 @@
 	2.21: Emscripten Overhaul - Thanks Moros!
 		  +DrawPolygonDecal() tint overload, can now tint a polygon accounting for vertex colours
 		  +Multiplicative Pixel overload
-		  +v2d_generic clamp()
-		  +v2d_generic lerp()
+		  +v_2d clamp()
+		  +v_2d lerp()
 		  +GetDroppedFiles() - returns files dropped onto engine window for that frame (MSW only)
 		  +GetDroppedFilesPoint() - returns location of dropped files (MSW only)
 		  +Exposed OpenGL33 Loader interface so the typedefs can be shared with PGEX & user
@@ -317,7 +317,7 @@
 		  +olc::vf2d arguments for Sprite::Sample() functions
 	2.22: = Fix typo on dragged file buffers for unicode builds
 	2.23: Fixed Emscripten host sizing errors - Thanks Moros
-		  Fixed v2d_generic.clamp() function
+		  Fixed v_2d.clamp() function
 	2.24: Fix FillTexturedTriangle() to remove const-ref
 		  
     !! Apple Platforms will not see these updates immediately - Sorry, I dont have a mac to test... !!
@@ -668,76 +668,76 @@ namespace olc
 	// O------------------------------------------------------------------------------O
 #if !defined(OLC_IGNORE_VEC2D)
 	template <class T>
-	struct v2d_generic
+	struct v_2d
 	{
 		T x = 0;
 		T y = 0;
-		v2d_generic() : x(0), y(0) {}
-		v2d_generic(T _x, T _y) : x(_x), y(_y) {}
-		v2d_generic(const v2d_generic& v) : x(v.x), y(v.y) {}
-		v2d_generic& operator=(const v2d_generic& v) = default;
+		v_2d() : x(0), y(0) {}
+		v_2d(T _x, T _y) : x(_x), y(_y) {}
+		v_2d(const v_2d& v) : x(v.x), y(v.y) {}
+		v_2d& operator=(const v_2d& v) = default;
 		T mag() const { return T(std::sqrt(x * x + y * y)); }
 		T mag2() const { return x * x + y * y; }
-		v2d_generic  norm() const { T r = 1 / mag(); return v2d_generic(x * r, y * r); }
-		v2d_generic  perp() const { return v2d_generic(-y, x); }
-		v2d_generic  floor() const { return v2d_generic(std::floor(x), std::floor(y)); }
-		v2d_generic  ceil() const { return v2d_generic(std::ceil(x), std::ceil(y)); }
-		v2d_generic  max(const v2d_generic& v) const { return v2d_generic(std::max(x, v.x), std::max(y, v.y)); }
-		v2d_generic  min(const v2d_generic& v) const { return v2d_generic(std::min(x, v.x), std::min(y, v.y)); }
-		v2d_generic  cart() { return { std::cos(y) * x, std::sin(y) * x }; }
-		v2d_generic  polar() { return { mag(), std::atan2(y, x) }; }
-		v2d_generic  clamp(const v2d_generic& v1, const v2d_generic& v2) const { return this->max(v1).min(v2); }
-		v2d_generic	 lerp(const v2d_generic& v1, const double t) { return this->operator*(T(1.0 - t)) + (v1 * T(t)); }
-		T dot(const v2d_generic& rhs) const { return this->x * rhs.x + this->y * rhs.y; }
-		T cross(const v2d_generic& rhs) const { return this->x * rhs.y - this->y * rhs.x; }
-		v2d_generic  operator +  (const v2d_generic& rhs) const { return v2d_generic(this->x + rhs.x, this->y + rhs.y); }
-		v2d_generic  operator -  (const v2d_generic& rhs) const { return v2d_generic(this->x - rhs.x, this->y - rhs.y); }
-		v2d_generic  operator *  (const T& rhs)           const { return v2d_generic(this->x * rhs, this->y * rhs); }
-		v2d_generic  operator *  (const v2d_generic& rhs) const { return v2d_generic(this->x * rhs.x, this->y * rhs.y); }
-		v2d_generic  operator /  (const T& rhs)           const { return v2d_generic(this->x / rhs, this->y / rhs); }
-		v2d_generic  operator /  (const v2d_generic& rhs) const { return v2d_generic(this->x / rhs.x, this->y / rhs.y); }
-		v2d_generic& operator += (const v2d_generic& rhs) { this->x += rhs.x; this->y += rhs.y; return *this; }
-		v2d_generic& operator -= (const v2d_generic& rhs) { this->x -= rhs.x; this->y -= rhs.y; return *this; }
-		v2d_generic& operator *= (const T& rhs) { this->x *= rhs; this->y *= rhs; return *this; }
-		v2d_generic& operator /= (const T& rhs) { this->x /= rhs; this->y /= rhs; return *this; }
-		v2d_generic& operator *= (const v2d_generic& rhs) { this->x *= rhs.x; this->y *= rhs.y; return *this; }
-		v2d_generic& operator /= (const v2d_generic& rhs) { this->x /= rhs.x; this->y /= rhs.y; return *this; }
-		v2d_generic  operator +  () const { return { +x, +y }; }
-		v2d_generic  operator -  () const { return { -x, -y }; }
-		bool operator == (const v2d_generic& rhs) const { return (this->x == rhs.x && this->y == rhs.y); }
-		bool operator != (const v2d_generic& rhs) const { return (this->x != rhs.x || this->y != rhs.y); }
+		v_2d  norm() const { T r = 1 / mag(); return v_2d(x * r, y * r); }
+		v_2d  perp() const { return v_2d(-y, x); }
+		v_2d  floor() const { return v_2d(std::floor(x), std::floor(y)); }
+		v_2d  ceil() const { return v_2d(std::ceil(x), std::ceil(y)); }
+		v_2d  max(const v_2d& v) const { return v_2d(std::max(x, v.x), std::max(y, v.y)); }
+		v_2d  min(const v_2d& v) const { return v_2d(std::min(x, v.x), std::min(y, v.y)); }
+		v_2d  cart() { return { std::cos(y) * x, std::sin(y) * x }; }
+		v_2d  polar() { return { mag(), std::atan2(y, x) }; }
+		v_2d  clamp(const v_2d& v1, const v_2d& v2) const { return this->max(v1).min(v2); }
+		v_2d	 lerp(const v_2d& v1, const double t) { return this->operator*(T(1.0 - t)) + (v1 * T(t)); }
+		T dot(const v_2d& rhs) const { return this->x * rhs.x + this->y * rhs.y; }
+		T cross(const v_2d& rhs) const { return this->x * rhs.y - this->y * rhs.x; }
+		v_2d  operator +  (const v_2d& rhs) const { return v_2d(this->x + rhs.x, this->y + rhs.y); }
+		v_2d  operator -  (const v_2d& rhs) const { return v_2d(this->x - rhs.x, this->y - rhs.y); }
+		v_2d  operator *  (const T& rhs)           const { return v_2d(this->x * rhs, this->y * rhs); }
+		v_2d  operator *  (const v_2d& rhs) const { return v_2d(this->x * rhs.x, this->y * rhs.y); }
+		v_2d  operator /  (const T& rhs)           const { return v_2d(this->x / rhs, this->y / rhs); }
+		v_2d  operator /  (const v_2d& rhs) const { return v_2d(this->x / rhs.x, this->y / rhs.y); }
+		v_2d& operator += (const v_2d& rhs) { this->x += rhs.x; this->y += rhs.y; return *this; }
+		v_2d& operator -= (const v_2d& rhs) { this->x -= rhs.x; this->y -= rhs.y; return *this; }
+		v_2d& operator *= (const T& rhs) { this->x *= rhs; this->y *= rhs; return *this; }
+		v_2d& operator /= (const T& rhs) { this->x /= rhs; this->y /= rhs; return *this; }
+		v_2d& operator *= (const v_2d& rhs) { this->x *= rhs.x; this->y *= rhs.y; return *this; }
+		v_2d& operator /= (const v_2d& rhs) { this->x /= rhs.x; this->y /= rhs.y; return *this; }
+		v_2d  operator +  () const { return { +x, +y }; }
+		v_2d  operator -  () const { return { -x, -y }; }
+		bool operator == (const v_2d& rhs) const { return (this->x == rhs.x && this->y == rhs.y); }
+		bool operator != (const v_2d& rhs) const { return (this->x != rhs.x || this->y != rhs.y); }
 		const std::string str() const { return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + ")"; }
-		friend std::ostream& operator << (std::ostream& os, const v2d_generic& rhs) { os << rhs.str(); return os; }
-		operator v2d_generic<int32_t>() const { return { static_cast<int32_t>(this->x), static_cast<int32_t>(this->y) }; }
-		operator v2d_generic<float>() const { return { static_cast<float>(this->x), static_cast<float>(this->y) }; }
-		operator v2d_generic<double>() const { return { static_cast<double>(this->x), static_cast<double>(this->y) }; }
+		friend std::ostream& operator << (std::ostream& os, const v_2d& rhs) { os << rhs.str(); return os; }
+		operator v_2d<int32_t>() const { return { static_cast<int32_t>(this->x), static_cast<int32_t>(this->y) }; }
+		operator v_2d<float>() const { return { static_cast<float>(this->x), static_cast<float>(this->y) }; }
+		operator v_2d<double>() const { return { static_cast<double>(this->x), static_cast<double>(this->y) }; }
 	};
 
 	// Note: joshinils has some good suggestions here, but they are complicated to implement at this moment, 
 	// however they will appear in a future version of PGE
-	template<class T> inline v2d_generic<T> operator * (const float& lhs, const v2d_generic<T>& rhs)
-	{ return v2d_generic<T>((T)(lhs * (float)rhs.x), (T)(lhs * (float)rhs.y)); }
-	template<class T> inline v2d_generic<T> operator * (const double& lhs, const v2d_generic<T>& rhs)
-	{ return v2d_generic<T>((T)(lhs * (double)rhs.x), (T)(lhs * (double)rhs.y)); }
-	template<class T> inline v2d_generic<T> operator * (const int& lhs, const v2d_generic<T>& rhs)
-	{ return v2d_generic<T>((T)(lhs * (int)rhs.x), (T)(lhs * (int)rhs.y)); }
-	template<class T> inline v2d_generic<T> operator / (const float& lhs, const v2d_generic<T>& rhs)
-	{ return v2d_generic<T>((T)(lhs / (float)rhs.x), (T)(lhs / (float)rhs.y)); }
-	template<class T> inline v2d_generic<T> operator / (const double& lhs, const v2d_generic<T>& rhs)
-	{ return v2d_generic<T>((T)(lhs / (double)rhs.x), (T)(lhs / (double)rhs.y)); }
-	template<class T> inline v2d_generic<T> operator / (const int& lhs, const v2d_generic<T>& rhs)
-	{ return v2d_generic<T>((T)(lhs / (int)rhs.x), (T)(lhs / (int)rhs.y)); }
+	template<class T> inline v_2d<T> operator * (const float& lhs, const v_2d<T>& rhs)
+	{ return v_2d<T>((T)(lhs * (float)rhs.x), (T)(lhs * (float)rhs.y)); }
+	template<class T> inline v_2d<T> operator * (const double& lhs, const v_2d<T>& rhs)
+	{ return v_2d<T>((T)(lhs * (double)rhs.x), (T)(lhs * (double)rhs.y)); }
+	template<class T> inline v_2d<T> operator * (const int& lhs, const v_2d<T>& rhs)
+	{ return v_2d<T>((T)(lhs * (int)rhs.x), (T)(lhs * (int)rhs.y)); }
+	template<class T> inline v_2d<T> operator / (const float& lhs, const v_2d<T>& rhs)
+	{ return v_2d<T>((T)(lhs / (float)rhs.x), (T)(lhs / (float)rhs.y)); }
+	template<class T> inline v_2d<T> operator / (const double& lhs, const v_2d<T>& rhs)
+	{ return v_2d<T>((T)(lhs / (double)rhs.x), (T)(lhs / (double)rhs.y)); }
+	template<class T> inline v_2d<T> operator / (const int& lhs, const v_2d<T>& rhs)
+	{ return v_2d<T>((T)(lhs / (int)rhs.x), (T)(lhs / (int)rhs.y)); }
 
 	// To stop dandistine crying...
-	template<class T, class U> inline bool operator < (const v2d_generic<T>& lhs, const v2d_generic<U>& rhs)
+	template<class T, class U> inline bool operator < (const v_2d<T>& lhs, const v_2d<U>& rhs)
 	{ return lhs.y < rhs.y || (lhs.y == rhs.y && lhs.x < rhs.x); }
-	template<class T, class U> inline bool operator > (const v2d_generic<T>& lhs, const v2d_generic<U>& rhs)
+	template<class T, class U> inline bool operator > (const v_2d<T>& lhs, const v_2d<U>& rhs)
 	{ return lhs.y > rhs.y || (lhs.y == rhs.y && lhs.x > rhs.x); }
 
-	typedef v2d_generic<int32_t> vi2d;
-	typedef v2d_generic<uint32_t> vu2d;
-	typedef v2d_generic<float> vf2d;
-	typedef v2d_generic<double> vd2d;
+	typedef v_2d<int32_t> vi2d;
+	typedef v_2d<uint32_t> vu2d;
+	typedef v_2d<float> vf2d;
+	typedef v_2d<double> vd2d;
 #endif
 
 

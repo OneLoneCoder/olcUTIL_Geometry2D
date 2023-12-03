@@ -1137,7 +1137,7 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr rect<T1> envelope_r(const circle<T1>& c)
 	{		
-		return rect<T1>(c - {c.radius, c.radius}, { c.radius * 2, c.radius * 2 });
+		return rect<T1>(c - circle<T1>{c.radius, c.radius}, {c.radius * 2, c.radius * 2});
 	}
 
 	// Return rectangle that fully encapsulates a triangle

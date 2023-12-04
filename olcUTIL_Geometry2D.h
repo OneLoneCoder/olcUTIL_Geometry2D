@@ -857,7 +857,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const line<T1>& l1, const line<T2>& l2)
 	{
-		return overlaps(l1, l2.start) && overlaps(l1, l2.end)
+		return overlaps(l1, l2.start) && overlaps(l1, l2.end);
 	}
 
 	// Check if rectangle contains line segment

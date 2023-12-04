@@ -1170,8 +1170,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const rect<T1>& r, const circle<T2>& c)
 	{
-		// TODO:
-		return false;
+		return r.pos.x + c.radius <= c.pos.x
+			&& c.pos.x <= r.pos.x + r.size.x - c.radius
+			&& r.pos.y + c.radius <= c.pos.y
+			&& c.pos.y <= r.pos.y + r.size.y - c.radius;
 	}
 
 	// Check if circle contains circle

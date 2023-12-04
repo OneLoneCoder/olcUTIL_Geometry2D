@@ -895,8 +895,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const line<T1>& l1, const line<T2>& l2)
 	{
-		float uA = ((l2.end.x-l2.start.x)*(l1.start.y-l2.start.y) - (l2.end.y-l2.start.y)*(l1.start.x-l2.start.x)) / ((l2.end.y-l2.start.y)*(l1.end.x-l1.start.x) - (l2.end.x-l2.start.x)*(l1.end.y-l1.start.y));
-		float uB = ((l1.end.x-l1.start.x)*(l1.start.y-l2.start.y) - (l1.end.y-l1.start.y)*(l1.start.x-l2.start.x)) / ((l2.end.y-l2.start.y)*(l1.end.x-l1.start.x) - (l2.end.x-l2.start.x)*(l1.end.y-l1.start.y));
+		double D = ((l2.end.y - l2.start.y) * (l1.end.x - l1.start.x) - (l2.end.x - l2.start.x) * (l1.end.y - l1.start.y));
+		double uA = ((l2.end.x-l2.start.x)*(l1.start.y-l2.start.y) - (l2.end.y-l2.start.y)*(l1.start.x-l2.start.x)) / D;
+		double uB = ((l1.end.x-l1.start.x)*(l1.start.y-l2.start.y) - (l1.end.y-l1.start.y)*(l1.start.x-l2.start.x)) / D;
 		return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1;
 	}
 
@@ -1554,9 +1555,9 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr rect<T1> envelope_r(const triangle<T1>& t)
 	{
-	        auto vMin = t.pos[0].min(t.pos[1].min(t.pos[2]));
-                auto vMax = t.pos[0].max(t.pos[1].max(t.pos[2]));
-                return rect<T1>(vMin, vMax - vMin);
+		auto vMin = t.pos[0].min(t.pos[1].min(t.pos[2]));
+		auto vMax = t.pos[0].max(t.pos[1].max(t.pos[2]));
+		return rect<T1>(vMin, vMax - vMin);
 	}
 
 }

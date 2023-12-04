@@ -403,40 +403,42 @@ namespace olc::utils::geom2d
 			: start(s), end(e)
 		{ }
 
-
-		// Get length of line
-		inline constexpr T length()
-		{
-			return (end - start).mag();
-		}
-
-		// Get length of line^2
-		inline constexpr T length2()
-		{
-			return (end - start).mag2();
-		}
-
+		// Get vector pointing from start to end
 		inline constexpr olc::v_2d<T> vector() const
 		{
 			return (end - start);
 		}
 
+		// Get length of line
+		inline constexpr T length()
+		{
+			return vector().mag();
+		}
+
+		// Get length of line^2
+		inline constexpr T length2()
+		{
+			return vector().mag2();
+		}
+
+		
+
 		// Given a real distance, get point along line
 		inline constexpr olc::v_2d<T> rpoint(const T& distance) const
 		{
-			return start + (end - start).norm() * distance;
+			return start + vector().norm() * distance;
 		}
 
 		// Given a unit distance, get point along line
 		inline constexpr olc::v_2d<T> upoint(const T& distance) const
 		{
-			return start + (end - start) * distance;
+			return start + vector() * distance;
 		}
 
 		// Return which side of the line does a point lie
 		inline constexpr int32_t side(const olc::v_2d<T>& point) const
 		{
-			double d = (end - start).cross(point - start);
+			double d = vector().cross(point - start);
 			if (d < 0)
 				return -1;
 			else
@@ -855,8 +857,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const line<T1>& l1, const line<T2>& l2)
 	{
-		// TODO: Check if segments are colinear, and l1 exists within bounds of l2
-		return false;
+		return overlaps(l1, l2.start) && overlaps(l1, l2.end)
 	}
 
 	// Check if rectangle contains line segment
@@ -960,7 +961,7 @@ namespace olc::utils::geom2d
 		if (rn < 0.f || rn > 1.f || sn < 0.f || sn > 1.f)
 			return {}; // Intersection not within line segment
 
-		return { l1.start + rn * (l1.end - l1.start) };
+		return { l1.start + rn * l1.vector()};
 	}
 
 	// Get intersection points where rectangle intersects with line segment

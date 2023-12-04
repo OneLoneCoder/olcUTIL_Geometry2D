@@ -58,6 +58,7 @@
 	piratux
 	sigonasr
 	bixxy
+	Qwerasd
 
 	Changes:
 	v1.01:		+Made constants inline
@@ -1384,41 +1385,41 @@ namespace olc::utils::geom2d
 	{
 		if (c1.pos == c2.pos) return {}; // circles are either within one another so cannot intersect, or are
                                      // identical so share all points which there's no good way to represent in return value.
-    v_2d<T1> between = c2.pos - c1.pos;
-    float dist2 = between.mag2();
-    float radiusSum = c1.radius + c2.radius;
-    if (dist2 > radiusSum*radiusSum) return {}; // circles are too far apart to be touching.
-    if (contains(c1, c2) || contains(c2, c1)) return {}; // one circle is inside of the other, they can't be intersecting.
-    if (dist2 == radiusSum) return {c1.pos + between.norm() * c1.radius}; // circles are touching at exactly 1 point
-    // otherwise they're touching at 2 points.
-  //                                                                                                                   
-  //                ______     ________                                                                                
-  //             .''      ''.X'        ''.      X = intersections                                                      
-  //            /          / |\           \     O = chordCenter                                                        
-  //           |          |  | |           |    In order to find the intersections we first find O.                    
-  //           (      c1--(--O-)--c2       )    To do this, we find the distance c1->O by solving for the              
-  //           |          |  | |           |    two right triangles formed by the chord and c1->c2 (L).                
-  //            \          \ |/           /           .                Pythagorean theorem:                            
-  //             '.        .'X          ,'          .'|\               (L-x)^2 + h^2 = c1.r^2                          
-  //               ''----''   ''------''      c1.r /  | \ c2.radius        x^2 + h^2 = c2.r^2                          
-  //                                             .'  h|  \             Subtract 1 equation from the other and solve:   
-  //                                            /_____|___\            (L-x)^2 + h^2 - (x^2 + h^2) = c1.r^2 - c2.r^2   
-  //                                               x   L-x             (L-x)^2 - x^2 = c1.r^2 - c2.r^2                 
-  //                                                                   L^2 - 2Lx = c1.r^2 - c2.r^2                     
-  //                                                                   2Lx - L^2 = c2.r^2 - c1.r^2                     
-  //       v------------<-----------------<-----------------<-----.    x = (L^2 + c2.r^2 - c1.r^2)/2 -.                
-  //       Next, we have to solve for the height h, and move       '-------<--------------------<-----'                
-  //       that distance from O, perpendicular to c1->c2.                                                              
-  //                                                                                                                   
-  //       Pythagorean theorem: x^2 + h^2 = c1.r^2  ->  c1.r^2 - x^2 = h^2  ->  h = sqrt(c1.r^2 - x^2)                 
-  //                                                                                                                   
-  //       x is ccDist and h is halfChord.                                                                             
-  //                                                                                                                   
-    float dist = std::sqrt(dist2);
-    float ccDist = (dist2 + c1.radius * c1.radius - c2.radius * c2.radius)/(2*dist);
-    v_2d<T1> chordCenter = c1.pos + between.norm() * ccDist;
-    v_2d<T1> halfChord = between.norm().perp() * std::sqrt(c1.radius * c1.radius - ccDist * ccDist);
-    return {chordCenter + halfChord, chordCenter - halfChord};
+		v_2d<T1> between = c2.pos - c1.pos;
+		float dist2 = between.mag2();
+		float radiusSum = c1.radius + c2.radius;
+		if (dist2 > radiusSum*radiusSum) return {}; // circles are too far apart to be touching.
+		if (contains(c1, c2) || contains(c2, c1)) return {}; // one circle is inside of the other, they can't be intersecting.
+		if (dist2 == radiusSum) return {c1.pos + between.norm() * c1.radius}; // circles are touching at exactly 1 point
+		// otherwise they're touching at 2 points.
+	  //                                                                                                                   
+	  //                ______     ________                                                                                
+	  //             .''      ''.X'        ''.      X = intersections                                                      
+	  //            /          / |\           \     O = chordCenter                                                        
+	  //           |          |  | |           |    In order to find the intersections we first find O.                    
+	  //           (      c1--(--O-)--c2       )    To do this, we find the distance c1->O by solving for the              
+	  //           |          |  | |           |    two right triangles formed by the chord and c1->c2 (L).                
+	  //            \          \ |/           /           .                Pythagorean theorem:                            
+	  //             '.        .'X          ,'          .'|\               (L-x)^2 + h^2 = c1.r^2                          
+	  //               ''----''   ''------''      c1.r /  | \ c2.radius        x^2 + h^2 = c2.r^2                          
+	  //                                             .'  h|  \             Subtract 1 equation from the other and solve:   
+	  //                                            /_____|___\            (L-x)^2 + h^2 - (x^2 + h^2) = c1.r^2 - c2.r^2   
+	  //                                               x   L-x             (L-x)^2 - x^2 = c1.r^2 - c2.r^2                 
+	  //                                                                   L^2 - 2Lx = c1.r^2 - c2.r^2                     
+	  //                                                                   2Lx - L^2 = c2.r^2 - c1.r^2                     
+	  //       v------------<-----------------<-----------------<-----.    x = (L^2 + c2.r^2 - c1.r^2)/2 -.                
+	  //       Next, we have to solve for the height h, and move       '-------<--------------------<-----'                
+	  //       that distance from O, perpendicular to c1->c2.                                                              
+	  //                                                                                                                   
+	  //       Pythagorean theorem: x^2 + h^2 = c1.r^2  ->  c1.r^2 - x^2 = h^2  ->  h = sqrt(c1.r^2 - x^2)                 
+	  //                                                                                                                   
+	  //       x is ccDist and h is halfChord.                                                                             
+	  //                                                                                                                   
+		float dist = std::sqrt(dist2);
+		float ccDist = (dist2 + c1.radius * c1.radius - c2.radius * c2.radius)/(2*dist);
+		v_2d<T1> chordCenter = c1.pos + between.norm() * ccDist;
+		v_2d<T1> halfChord = between.norm().perp() * std::sqrt(c1.radius * c1.radius - ccDist * ccDist);
+		return {chordCenter + halfChord, chordCenter - halfChord};
 	}
 
 	// intersects(t,c)

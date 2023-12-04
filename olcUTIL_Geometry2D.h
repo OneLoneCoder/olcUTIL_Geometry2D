@@ -57,6 +57,7 @@
 	cstdint
 	piratux
 	sigonasr
+	bixxy
 
 	Changes:
 	v1.01:		+Made constants inline
@@ -1438,8 +1439,26 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr circle<T1> envelope_c(const triangle<T1>& t)
 	{
-		// TODO:
-		return {};
+		olc::v_2d<T1> circumcenter;
+
+		T1 D = 2 * (t.pos[0].x * (t.pos[1].y - t.pos[2].y) + t.pos[1].x * (t.pos[2].y - t.pos[0].y) + t.pos[2].x * (t.pos[0].y - t.pos[1].y));
+		circumcenter.x = (
+			(t.pos[0].x * t.pos[0].x + t.pos[0].y * t.pos[0].y) * (t.pos[1].y - t.pos[2].y) + 
+			(t.pos[1].x * t.pos[1].x + t.pos[1].y * t.pos[1].y) * (t.pos[2].y - t.pos[0].y) + 
+			(t.pos[2].x * t.pos[2].x + t.pos[2].y * t.pos[2].y) * (t.pos[0].y - t.pos[1].y)
+		) / D;
+		circumcenter.y = (
+			(t.pos[0].x * t.pos[0].x + t.pos[0].y * t.pos[0].y) * (t.pos[2].x - t.pos[1].x) + 
+			(t.pos[1].x * t.pos[1].x + t.pos[1].y * t.pos[1].y) * (t.pos[0].x - t.pos[2].x) +
+			(t.pos[2].x * t.pos[2].x + t.pos[2].y * t.pos[2].y) * (t.pos[1].x - t.pos[0].x)
+		) / D;
+
+		T1 r = 0;
+		for (auto& point : t.pos) {
+			r = std::max(r, std::hypot(circumcenter.x - point.x, circumcenter.y - point.y));
+		}
+
+		return {circumcenter, r};
 	}
 
 

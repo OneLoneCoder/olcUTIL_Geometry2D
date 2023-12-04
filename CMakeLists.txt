@@ -92,13 +92,6 @@ foreach( testSourceFile ${APP_SOURCES} )
         target_link_libraries(${testName} ${PNG_LIBRARIES})
         include_directories(${PNG_INCLUDE_DIRS})
 
-        if (NOT APPLE AND NOT MINGW AND NOT CYGWIN)
-            find_package(OpenAL REQUIRED)
-            target_link_libraries(${testName} ${OPENAL_LIBRARY})
-            include_directories(${OPENAL_INCLUDE_DIRS})
-            target_compile_definitions(${testName} PUBLIC USE_OPENAL)
-        endif (NOT APPLE AND NOT MINGW AND NOT CYGWIN)
-        
         set_target_properties(${testName} PROPERTIES COMPILE_FLAGS "-ggdb3 -Og")
         
     endif (UNIX)
@@ -165,10 +158,6 @@ foreach( testSourceFile ${APP_SOURCES} )
         set(DWMAPI_LIBRARY dwmapi)
         target_link_libraries(${testName} ${DWMAPI_LIBRARY})
 
-        # winmm
-        set(WINMM_LIBRARY winmm)
-        target_link_libraries(${testName} ${WINMM_LIBRARY})
-        
     endif (WIN32 AND NOT EMSCRIPTEN)
 
     # Emscripten specifics

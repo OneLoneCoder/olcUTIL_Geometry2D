@@ -365,7 +365,7 @@ namespace olc
 	{
 		os << rhs.str();
 		return os;
-	}
+	} 
 
 	// Convenient types ready-to-go
 	typedef v_2d<int32_t> vi2d;
@@ -598,7 +598,7 @@ namespace olc::utils::geom2d
 
 	// Returns closest point to point
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const olc::v_2d<T1>& p1, const olc::v_2d<T2>& p2)
+	inline olc::v_2d<T1> closest(const olc::v_2d<T1>& p1, [[maybe_unused]] const olc::v_2d<T2>& p2)
 	{
 		return p1;
 	}
@@ -848,7 +848,7 @@ namespace olc::utils::geom2d
 
 	// Check if point contains line segment
 	template<typename T1, typename T2>
-	inline constexpr bool contains(const olc::v_2d<T1>& p, const line<T2>& l)
+	inline constexpr bool contains([[maybe_unused]] const olc::v_2d<T1>& p, [[maybe_unused]] const line<T2>& l)
 	{
 		return false; // It can't!
 	}
@@ -1000,25 +1000,21 @@ namespace olc::utils::geom2d
 			// Circle is too far away
 			return {};
 		}
-		else
-		{
-			// Circle intersects the line
-			const auto length = std::sqrt(c.radius * c.radius - dist);
-			const auto p1 = closestPoint + l.vector().norm() * length;
-			const auto p2 = closestPoint - l.vector().norm() * length;
+		
+		// Circle intersects the line
+		const auto length = std::sqrt(c.radius * c.radius - dist);
+		const auto p1 = closestPoint + l.vector().norm() * length;
+		const auto p2 = closestPoint - l.vector().norm() * length;
 
-			std::vector<olc::v_2d<T2>> intersections;
-			intersections.reserve(2);
+		std::vector<olc::v_2d<T2>> intersections;
+		intersections.reserve(2);
 
-			if ((p1 - closest(l, p1)).mag2() < epsilon * epsilon)
-				intersections.push_back(p1);
-			if ((p2 - closest(l, p2)).mag2() < epsilon * epsilon)
-				intersections.push_back(p2);
+		if ((p1 - closest(l, p1)).mag2() < epsilon * epsilon)
+			intersections.push_back(p1);
+		if ((p2 - closest(l, p2)).mag2() < epsilon * epsilon)
+			intersections.push_back(p2);
 
-			return intersections;
-		}
-
-		return {};
+		return intersections;
 	}
 
 	// Get intersection points where triangle intersects with line segment
@@ -1062,14 +1058,14 @@ namespace olc::utils::geom2d
 
 	// Check if point contains rectangle
 	template<typename T1, typename T2>
-	inline constexpr bool contains(const olc::v_2d<T1>& p, const rect<T2>& r)
+	inline constexpr bool contains([[maybe_unused]] const olc::v_2d<T1>& p, [[maybe_unused]] const rect<T2>& r)
 	{
 		return false; // It can't!
 	}
 
 	// Check if line segment contains rectangle
 	template<typename T1, typename T2>
-	inline constexpr bool contains(const line<T1>& l, const rect<T2>& r)
+	inline constexpr bool contains([[maybe_unused]] const line<T1>& l, [[maybe_unused]] const rect<T2>& r)
 	{
 		return false; // It can't
 	}
@@ -1208,14 +1204,14 @@ namespace olc::utils::geom2d
 
 	// Check if point contains circle
 	template<typename T1, typename T2>
-	inline constexpr bool contains(const olc::v_2d<T1>& p, const circle<T2>& c)
+	inline constexpr bool contains([[maybe_unused]] const olc::v_2d<T1>& p, [[maybe_unused]] const circle<T2>& c)
 	{
 		return false; // It can't!
 	}
 
 	// Check if line segment contains circle
 	template<typename T1, typename T2>
-	inline constexpr bool contains(const line<T1>& l, const circle<T2>& c)
+	inline constexpr bool contains([[maybe_unused]] const line<T1>& l, [[maybe_unused]] const circle<T2>& c)
 	{
 		return false; // It can't!
 	}
@@ -1339,14 +1335,14 @@ namespace olc::utils::geom2d
 
 	// Check if point contains triangle
 	template<typename T1, typename T2>
-	inline constexpr bool contains(const olc::v_2d<T1>& p, const triangle<T2>& t)
+	inline constexpr bool contains([[maybe_unused]] const olc::v_2d<T1>& p, [[maybe_unused]] const triangle<T2>& t)
 	{
 		return false; // It can't!
 	}
 
 	// Check if line segment contains triangle
 	template<typename T1, typename T2>
-	inline constexpr bool contains(const line<T1>& l, const triangle<T2>& t)
+	inline constexpr bool contains([[maybe_unused]] const line<T1>& l, [[maybe_unused]] const triangle<T2>& t)
 	{
 		return false; // It can't
 	}

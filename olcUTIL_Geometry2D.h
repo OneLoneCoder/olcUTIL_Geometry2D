@@ -923,10 +923,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const triangle<T1>& t, const line<T2>& l)
 	{
-		return overlaps(t, l.start) || overlaps(t, l.end);
-
-		// TODO: This method is no good, it cant detect lines whose start and end
-		// points are outside the triangle
+		return overlaps(t, l.start) || overlaps(t.side(0), l) || overlaps(t.side(1), l) || overlaps(t.side(2), l);
 	}
 
 

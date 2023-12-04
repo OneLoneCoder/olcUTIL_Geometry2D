@@ -1302,8 +1302,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const rect<T1>& r, const triangle<T2>& t)
 	{
-		// TODO:
-		return false;
+		return contains(r, t.side(0))
+			&& contains(r, t.side(1))
+			&& contains(r, t.side(2));
 	}
 
 	// Check if circle contains triangle

@@ -1486,8 +1486,9 @@ namespace olc::utils::geom2d
 	template<typename T1>
 	inline constexpr rect<T1> envelope_r(const triangle<T1>& t)
 	{
-		// TODO:
-		return {};
+	        auto vMin = t.pos[0].min(t.pos[1].min(t.pos[2]));
+                auto vMax = t.pos[0].max(t.pos[1].max(t.pos[2]));
+                return rect<T1>(vMin, vMax - vMin);
 	}
 
 }

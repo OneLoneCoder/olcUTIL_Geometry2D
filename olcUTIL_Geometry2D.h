@@ -989,8 +989,25 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const line<T2>& l)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> intersections;
+		intersections.reserve(2);
+
+		auto lineVsLine = [&intersections](const auto& l1, const auto& l2) {
+			auto ints = intersects(l1, l2);
+
+			for (auto&& i : ints)
+				intersections.push_back(std::move(i));
+		};
+
+		lineVsLine(line(t.pos[0], t.pos[1]), l);
+		lineVsLine(line(t.pos[1], t.pos[2]), l);
+		lineVsLine(line(t.pos[0], t.pos[2]), l);
+
+		// remove potential duplicate intersection.
+		if (intersections.size() == 2 && intersections[0] == intersections[1])
+			intersections.pop_back();
+
+		return intersections;
 	}
 
 

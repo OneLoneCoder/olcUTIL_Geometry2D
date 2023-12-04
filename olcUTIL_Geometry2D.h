@@ -989,28 +989,34 @@ namespace olc::utils::geom2d
 		const auto closestPoint = l.start + u * d;
 
 		const auto dist = (c.pos - closestPoint).mag2();
+		const auto rr = c.radius * c.radius;
 
-		if (dist > c.radius * c.radius)
+		if (std::abs(dist - rr) < epsilon)
 		{
-			return {};
-		}
-		// Maybe do some epsilon things because two floats are rarely equal
-		else if (dist == c.radius * c.radius)
-		{
+			// Circle "kisses" the line
 			return {closestPoint};
+		}
+		else if (dist > rr)
+		{
+			// Circle is too far away
+			return {};
 		}
 		else
 		{
+			// Circle intersects the line
 			const auto length = std::sqrt(c.radius * c.radius - dist);
 			const auto p1 = closestPoint + l.vector().norm() * length;
 			const auto p2 = closestPoint - l.vector().norm() * length;
 
-			if (contains(l, p1) && contains(l, p2))
-				return {p1, p2};
-			else if (contains(l, p1))
-				return {p1};
-			else if (contains(l, p2))
-				return {p2};
+			std::vector<olc::v_2d<T2>> intersections;
+			intersections.reserve(2);
+
+			if ((p1 - closest(l, p1)).mag2() < epsilon * epsilon)
+				intersections.push_back(p1);
+			if ((p2 - closest(l, p2)).mag2() < epsilon * epsilon)
+				intersections.push_back(p2);
+
+			return intersections;
 		}
 
 		return {};

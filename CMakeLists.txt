@@ -130,22 +130,8 @@ foreach( testSourceFile ${APP_SOURCES} )
                 VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
             )
             
-            # set subsytem, console if HAS_TERMINAL is true. windows if not
-            if (HAS_TERMINAL)
-                target_link_options(${testName} PRIVATE "/SUBSYSTEM:CONSOLE")
-            else ()
-                target_link_options(${testName} PRIVATE "/SUBSYSTEM:WINDOWS")
-            endif ()
-
         endif (MSVC)
         
-        # prevent console launch when compiled with MinGW
-        if (MINGW)
-            if (NOT HAS_TERMINAL)
-                target_link_libraries(${testName} -mwindows)
-            endif (NOT HAS_TERMINAL)
-        endif (MINGW)
-
         # GDI+
         set(GDIPLUS_LIBRARY gdiplus)
         target_link_libraries(${testName} ${GDIPLUS_LIBRARY})

@@ -1187,8 +1187,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const triangle<T1>& t, const circle<T2>& c)
 	{
-		// TODO:
-		return false;
+		return contains(t, c.pos) && (c.pos - closest(t, c.pos)).mag2() >= c.radius * c.radius;
 	}
 
 

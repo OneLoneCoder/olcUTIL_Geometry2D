@@ -983,7 +983,36 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const circle<T1>& c, const line<T2>& l)
 	{
-		// TODO:
+		// Compute point closest to the circle on the line
+		const auto d = l.vector();
+		const auto u = d.dot(c.pos - l.start) / d.mag2();
+		const auto closestPoint = l.start + u * d;
+
+		const auto dist = (c.pos - closestPoint).mag2();
+
+		if (dist > c.radius * c.radius)
+		{
+			return {};
+		}
+		// Maybe do some epsilon things because two floats are rarely equal
+		else if (dist == c.radius * c.radius)
+		{
+			return {closestPoint};
+		}
+		else
+		{
+			const auto length = std::sqrt(c.radius * c.radius - dist);
+			const auto p1 = closestPoint + l.vector().norm() * length;
+			const auto p2 = closestPoint - l.vector().norm() * length;
+
+			if (contains(l, p1) && contains(l, p2))
+				return {p1, p2};
+			else if (contains(l, p1))
+				return {p1};
+			else if (contains(l, p2))
+				return {p2};
+		}
+
 		return {};
 	}
 

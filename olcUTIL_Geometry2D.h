@@ -1093,7 +1093,8 @@ namespace olc::utils::geom2d
 		return overlaps(t, r.top())
 			|| overlaps(t, r.bottom())
 			|| overlaps(t, r.left())
-			|| overlaps(t, r.right());
+			|| overlaps(t, r.right())
+			|| contains(r, t.pos[0]);
 	}
 
 

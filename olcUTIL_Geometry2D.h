@@ -1464,7 +1464,7 @@ namespace olc::utils::geom2d
 		T1 min_x=std::min(l.start.x,l.end.x);
 		T1 min_y=std::min(l.start.y,l.end.y);
 		T1 size_x=std::abs(l.start.x-l.end.x);
-		T1 size_y=std::abs(l.start.x-l.end.x);
+		T1 size_y=std::abs(l.start.y-l.end.y);
 		return {{min_x,min_y},{size_x,size_y}};
 	}
 

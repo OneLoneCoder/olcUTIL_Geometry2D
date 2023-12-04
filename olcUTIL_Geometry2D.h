@@ -1134,9 +1134,9 @@ namespace olc::utils::geom2d
 		// Inspired by this (very clever btw) 
 		// https://stackoverflow.com/questions/45370692/circle-rectangle-collision-response
 		// But modified to work :P
-		T2 overlap = (olc::v_2d<T2>{ std::clamp(c.pos.x, r.pos.x, r.pos.x + r.size.x), std::clamp(c.pos.y, r.pos.y, r.pos.y + r.size.y) } - c.pos).mag2();
-		if (std::isnan(overlap)) overlap = T2(0);
-		return (overlap - (c.radius * c.radius)) < T2(0);
+		double overlap = (olc::v_2d<T2>{ std::clamp(c.pos.x, r.pos.x, r.pos.x + r.size.x), std::clamp(c.pos.y, r.pos.y, r.pos.y + r.size.y) } - c.pos).mag2();
+		if (std::isnan(overlap)) overlap = 0;
+		return (overlap - (c.radius * c.radius)) < 0;
 	}
 
 	// Check if triangle overlaps rectangle

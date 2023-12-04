@@ -8,7 +8,7 @@
 	License (OLC-3)
 	~~~~~~~~~~~~~~~
 
-	Copyright 2018 - 2022 OneLoneCoder.com
+	Copyright 2018 - 2023 OneLoneCoder.com
 
 	Redistribution and use in source and binary forms, with or without
 	modification, are permitted provided that the following conditions
@@ -589,7 +589,7 @@ namespace olc::utils::geom2d
 	template<typename T>
 	struct polygon
 	{
-		std::vector<olc::v_2d<T>> vPoints;
+		std::vector<olc::v_2d<T>> pos;
 	};
 
 
@@ -1491,24 +1491,24 @@ namespace olc::utils::geom2d
 	{
 		olc::v_2d<T1> circumcenter;
 
-		T1 D = 2 * (t.pos[0].x * (t.pos[1].y - t.pos[2].y) + t.pos[1].x * (t.pos[2].y - t.pos[0].y) + t.pos[2].x * (t.pos[0].y - t.pos[1].y));
-		circumcenter.x = (
+		double D = 2 * (t.pos[0].x * (t.pos[1].y - t.pos[2].y) + t.pos[1].x * (t.pos[2].y - t.pos[0].y) + t.pos[2].x * (t.pos[0].y - t.pos[1].y));
+		circumcenter.x = T1(double(
 			(t.pos[0].x * t.pos[0].x + t.pos[0].y * t.pos[0].y) * (t.pos[1].y - t.pos[2].y) + 
 			(t.pos[1].x * t.pos[1].x + t.pos[1].y * t.pos[1].y) * (t.pos[2].y - t.pos[0].y) + 
 			(t.pos[2].x * t.pos[2].x + t.pos[2].y * t.pos[2].y) * (t.pos[0].y - t.pos[1].y)
-		) / D;
-		circumcenter.y = (
+		) / D);
+		circumcenter.y = T1(double(
 			(t.pos[0].x * t.pos[0].x + t.pos[0].y * t.pos[0].y) * (t.pos[2].x - t.pos[1].x) + 
 			(t.pos[1].x * t.pos[1].x + t.pos[1].y * t.pos[1].y) * (t.pos[0].x - t.pos[2].x) +
 			(t.pos[2].x * t.pos[2].x + t.pos[2].y * t.pos[2].y) * (t.pos[1].x - t.pos[0].x)
-		) / D;
+		) / D);
 
-		T1 r = 0;
+		double r = 0;
 		for (auto& point : t.pos) {
-			r = std::max(r, std::hypot(circumcenter.x - point.x, circumcenter.y - point.y));
+			r = std::max(r, double(std::hypot(circumcenter.x - point.x, circumcenter.y - point.y)));
 		}
 
-		return {circumcenter, r};
+		return {circumcenter, T1(r)};
 	}
 
 

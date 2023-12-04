@@ -1090,13 +1090,11 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const triangle<T1>& t, const rect<T2>& r)
 	{
-		return contains(t, r.pos) 
-			|| contains(t, r.pos + r.size)
-			|| contains(t, olc::v_2d<T2>{ r.pos.x + r.size.x, r.pos.y }) 
-			|| contains(t, olc::v_2d<T2>{ r.pos.x, r.pos.y + r.size.y });
-
-		// TODO: This method is no good, consider rectangle with all vertices
-		// outside of triangle, but edges still crossing
+		return overlaps(t, r.top())
+			|| overlaps(t, r.bottom())
+			|| overlaps(t, r.left())
+			|| overlaps(t, r.right())
+			|| contains(r, t.pos[0]);
 	}
 
 
@@ -1173,8 +1171,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const rect<T1>& r, const circle<T2>& c)
 	{
-		// TODO:
-		return false;
+		return r.pos.x + c.radius <= c.pos.x
+			&& c.pos.x <= r.pos.x + r.size.x - c.radius
+			&& r.pos.y + c.radius <= c.pos.y
+			&& c.pos.y <= r.pos.y + r.size.y - c.radius;
 	}
 
 	// Check if circle contains circle
@@ -1188,8 +1188,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const triangle<T1>& t, const circle<T2>& c)
 	{
-		// TODO:
-		return false;
+		return contains(t, c.pos) && (c.pos - closest(t, c.pos)).mag2() >= c.radius * c.radius;
 	}
 
 
@@ -1227,8 +1226,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const triangle<T1>& t, const circle<T2>& c)
 	{
-		// TODO:
-		return false;
+		return contains(t, c.pos) || (c.pos - closest(t, c.pos)).mag2() <= c.radius * c.radius;
 	}
 
 

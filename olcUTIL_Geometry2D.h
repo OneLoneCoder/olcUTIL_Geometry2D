@@ -1090,13 +1090,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const triangle<T1>& t, const rect<T2>& r)
 	{
-		return contains(t, r.pos) 
-			|| contains(t, r.pos + r.size)
-			|| contains(t, olc::v_2d<T2>{ r.pos.x + r.size.x, r.pos.y }) 
-			|| contains(t, olc::v_2d<T2>{ r.pos.x, r.pos.y + r.size.y });
-
-		// TODO: This method is no good, consider rectangle with all vertices
-		// outside of triangle, but edges still crossing
+		return overlaps(t, r.top())
+			|| overlaps(t, r.bottom())
+			|| overlaps(t, r.left())
+			|| overlaps(t, r.right());
 	}
 
 

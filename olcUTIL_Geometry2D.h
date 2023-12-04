@@ -991,8 +991,35 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const line<T2>& l)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> intersections;
+		intersections.reserve(2);
+
+		// Taken from lineVsLine intersects function.
+		auto lineVsLine = [&intersections](const auto& l1, const auto& l2) {
+
+			auto rd = l1.vector().cross(l2.vector());
+			if (rd == 0) return;
+
+			rd = 1.f / rd;
+
+			auto rn = ((l2.end.x - l2.start.x) * (l1.start.y - l2.start.y) - (l2.end.y - l2.start.y) * (l1.start.x - l2.start.x)) * rd;
+			auto sn = ((l1.end.x - l1.start.x) * (l1.start.y - l2.start.y) - (l1.end.y - l1.start.y) * (l1.start.x - l2.start.x)) * rd;
+
+			if (rn < 0.f || rn > 1.f || sn < 0.f || sn > 1.f)
+				return;
+
+			intersections.emplace_back(l1.start + rn * (l1.end - l1.start));
+		};
+
+		lineVsLine(line(t.pos[0], t.pos[1]), l);
+		lineVsLine(line(t.pos[1], t.pos[2]), l);
+		lineVsLine(line(t.pos[0], t.pos[2]), l);
+
+		// remove potential duplicate intersection.
+		if (intersections.size() == 2 && intersections[0] == intersections[1])
+			intersections.pop_back();
+
+		return intersections;
 	}
 
 

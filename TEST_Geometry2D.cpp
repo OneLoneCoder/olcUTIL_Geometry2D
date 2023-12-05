@@ -546,7 +546,7 @@ public:
 				envelopingCircle = envelope_c(shapeCircle2);
 				break;
 			case Shapes::Triangle:
-				envelopingCircle = envelope_c(shapeTriangle2);
+				envelopingCircle = bounding_circle(shapeTriangle2);
 				break;
 			}
 			// using ceil to make sure it looks right
@@ -570,10 +570,10 @@ public:
 				envelopingRect = envelope_r(shapeCircle2);
 				break;
 			case Shapes::Triangle:
-				envelopingRect = envelope_r(shapeTriangle2);
+				envelopingRect = bounding_box(shapeTriangle2);
 				break;
 			}
-			DrawRect(envelopingRect.pos, envelopingRect.size, olc::VERY_DARK_MAGENTA);
+			DrawRect(envelopingRect.pos, envelopingRect.size, olc::MAGENTA);
 		}
 
 		guiManager.Draw(this);

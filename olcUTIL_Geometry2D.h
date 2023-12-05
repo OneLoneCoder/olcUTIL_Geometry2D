@@ -1585,6 +1585,8 @@ namespace olc::utils::geom2d
 		return circle<T1>(p, 0);
 	}
 
+	
+
 	// envelope_c(l)
 	// Return circle that fully encapsulates a line
 	template<typename T1>
@@ -1688,6 +1690,16 @@ namespace olc::utils::geom2d
 		auto vMin = t.pos[0].min(t.pos[1].min(t.pos[2]));
 		auto vMax = t.pos[0].max(t.pos[1].max(t.pos[2]));
 		return rect<T1>(vMin, vMax - vMin);
+	}
+
+	template<typename T> auto bounding_box(T&& t)
+	{
+		return envelope_r(std::forward<T>(t));
+	}
+
+	template<typename T> auto bounding_circle(T&& t)
+	{
+		return envelope_c(std::forward<T>(t));
 	}
 
 }

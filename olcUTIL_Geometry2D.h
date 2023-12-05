@@ -951,11 +951,11 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const rect<T1>& r, const line<T2>& l)
 	{
-
-		return overlaps(r.left(),l)||
-			overlaps(r.top(),l)||
-			overlaps(r.bottom(),l)||
-			overlaps(r.right(),l);
+		return contains(r, l.start)
+			|| overlaps(r.top(), l)
+			|| overlaps(r.bottom(), l)
+			|| overlaps(r.left(), l)
+			|| overlaps(r.right(), l);
 	}
 
 	// overlaps(c,l)
@@ -1016,6 +1016,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const rect<T1>& r, const line<T2>& l)
 	{
+		// TODO: this returns 2 intersections, when line intersects rectangle's corner (should return just 1)
 		std::vector<olc::v_2d<T2>>intersections;
 		std::vector<olc::v_2d<T2>>result=intersects(r.left(),l);
 		if(result.size()>0)intersections.push_back(result[0]);

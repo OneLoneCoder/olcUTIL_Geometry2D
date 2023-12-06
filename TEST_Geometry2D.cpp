@@ -71,7 +71,8 @@ public:
 		shapeRect2 = rect<float>({ 100.0f, 100.0f }, { 100.0f, 200.0f });
 		shapeCircle1 = circle<float>({ 270.0f, 240.0f }, 60.0f);
 		shapeCircle2 = circle<float>({ 270.0f, 240.0f }, 100.0f);
-		shapeTriangle1 = shapeTriangle2 = triangle<float>({ 150.0f, 100.0f }, { 350.0f, 200.0f }, { 75.0f, 300.0f });
+		shapeTriangle1 = triangle<float>({ 150.0f, 100.0f }, { 250.0f, 150.0f }, { 75.0f, 150.0f });
+		shapeTriangle2 = triangle<float>({ 150.0f, 100.0f }, { 350.0f, 200.0f }, { 75.0f, 300.0f });
 		return true;
 	}
 

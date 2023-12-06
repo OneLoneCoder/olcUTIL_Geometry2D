@@ -1231,8 +1231,14 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const rect<T1>& r1, const rect<T2>& r2)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> ret;
+		for (size_t i = 0; i < 4; i++) {
+			for (size_t j = 0; j < 4; j++) {
+				auto v = intersects(r1.side(i), r2.side(j));
+				ret.insert(ret.end(), v.begin(), v.end());
+			}
+		}
+		return ret;
 	}
 
 	// intersects(c,r)
@@ -1240,8 +1246,12 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const circle<T1>& c, const rect<T2>& r)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> ret;
+		for (size_t i = 0; i < 4; i++) {
+			auto v = intersects(c, r.side(i));
+			ret.insert(ret.end(), v.begin(), v.end());
+		}
+		return ret;
 	}
 
 	// intersects(t,r)
@@ -1249,8 +1259,14 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const rect<T2>& r)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> ret;
+		for (size_t i = 0; i < 3; i++) {
+			for (size_t j = 0; j < 4; j++) {
+				auto v = intersects(t.side(i), r.side(j));
+				ret.insert(ret.end(), v.begin(), v.end());
+			}
+		}
+		return ret;
 	}
 
 
@@ -1428,8 +1444,12 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const circle<T2>& c)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> ret;
+		for (size_t i = 0; i < 3; i++) {
+			auto v = intersects(t.side(i), c);
+			ret.insert(ret.end(), v.begin(), v.end());
+		}
+		return ret;
 	}
 
 
@@ -1478,8 +1498,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const circle<T1>& c, const triangle<T2>& t)
 	{
-		// TODO:
-		return false;
+		return contains(c, t.pos[0])
+			&& contains(c, t.pos[1])
+			&& contains(c, t.pos[2]);
 	}
 
 	// contains(t,t)
@@ -1487,8 +1508,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const triangle<T1>& t1, const triangle<T2>& t2)
 	{
-		// TODO:
-		return false;
+		return contains(t1, t2.pos[0])
+			&& contains(t1, t2.pos[1])
+			&& contains(t1, t2.pos[2]);
 	}
 
 
@@ -1530,8 +1552,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const triangle<T1>& t1, const triangle<T2>& t2)
 	{
-		// TODO:
-		return false;
+		return overlaps(t1, t2.pos[0])
+			|| overlaps(t1, t2.pos[1])
+			|| overlaps(t1, t2.pos[2]);
 	}
 
 
@@ -1573,8 +1596,14 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t1, const triangle<T2>& t2)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> ret;
+		for (size_t i = 0; i < 3; i++) {
+			for (size_t j = 0; j < 3; j++) {
+				auto v = intersects(t1.side(i), t2.side(j));
+				ret.insert(ret.end(), v.begin(), v.end());
+			}
+		}
+		return ret;
 	}
 
 

@@ -1554,7 +1554,10 @@ namespace olc::utils::geom2d
 	{
 		return overlaps(t1, t2.pos[0])
 			|| overlaps(t1, t2.pos[1])
-			|| overlaps(t1, t2.pos[2]);
+			|| overlaps(t1, t2.pos[2])
+			|| overlaps(t2, t1.pos[0])
+			|| overlaps(t2, t1.pos[1])
+			|| overlaps(t2, t1.pos[2]);
 	}
 
 

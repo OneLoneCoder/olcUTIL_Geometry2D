@@ -1552,6 +1552,17 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const triangle<T1>& t1, const triangle<T2>& t2)
 	{
+		// check if one of the sides overlaps with another.
+		for(size_t i = 0; i < 3; i++) {
+			for(size_t j = 0; j < 3; j++) {
+				if(overlaps(t1.side(i), t2.side(j))) {
+					return true;
+				}
+			}
+		}
+
+		// above test alone is not enough. even if no sides overlap
+		// one triangle may be containing the other.
 		return overlaps(t1, t2.pos[0])
 			|| overlaps(t1, t2.pos[1])
 			|| overlaps(t1, t2.pos[2])

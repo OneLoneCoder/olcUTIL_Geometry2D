@@ -467,6 +467,26 @@ namespace olc::utils::geom2d
 				else
 					return 0;
 		}
+
+		// Returns line equation "mx + a" coefficients where:
+		// x: m
+		// y: a
+		// NOTE: Returns {inf, inf} if std::abs(end.x - start.x) < epsilon:
+		inline constexpr olc::vd2d coefficients() const
+		{
+			double x1 = start.x;
+			double x2 = end.x;
+			double y1 = start.y;
+			double y2 = end.y;
+
+			// check if line is vertical or close to vertical
+			if (std::abs(x2 - x1) < epsilon) {
+				return olc::vd2d{ std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity() };
+			}
+
+			double m = (y2 - y1) / (x2 - x1);
+			return olc::vd2d {m, -m * x1 + y1};
+		}
 	};
 
 	template<typename T>
@@ -754,7 +774,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const circle<T1>& c, const olc::v_2d<T2>& p)
 	{
-		return (c.pos - p).mag2() < (c.radius * c.radius);
+		return (c.pos - p).mag2() <= (c.radius * c.radius);
 	}
 
 	// contains(t,p)
@@ -964,7 +984,7 @@ namespace olc::utils::geom2d
 	inline constexpr bool overlaps(const circle<T1>& c, const line<T2>& l)
 	{
 		auto vClosest = closest(l, c.pos);
-		return ((c.pos - vClosest).mag2() < (c.radius * c.radius));
+		return ((c.pos - vClosest).mag2() <= (c.radius * c.radius));
 	}
 
 	// overlaps(t,l)
@@ -1034,29 +1054,29 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const circle<T1>& c, const line<T2>& l)
 	{
-		// Compute point closest to the circle on the line
-		const auto d = l.vector();
-		const auto u = d.dot(c.pos - l.start) / d.mag2();
-		const auto closestPoint = l.start + u * d;
-
-		const auto dist = (c.pos - closestPoint).mag2();
-		const auto rr = c.radius * c.radius;
-
-		if (std::abs(dist - rr) < epsilon)
-		{
-			// Circle "kisses" the line
-			return {closestPoint};
-		}
-		else if (dist > rr)
+		const auto closestPointToSegment = closest(l, c.pos);
+		if (!overlaps(c, closestPointToSegment))
 		{
 			// Circle is too far away
 			return {};
 		}
-		
+
+		// Compute point closest to the circle on the line
+		const auto d = l.vector();
+		const auto uLine = d.dot(c.pos - l.start) / d.mag2();
+		const auto closestPointToLine = l.start + uLine * d;
+		const auto distToLine = (c.pos - closestPointToLine).mag2();
+
+		if (std::abs(distToLine - c.radius * c.radius) < epsilon)
+		{
+			// Circle "kisses" the line
+			return { closestPointToLine };
+		}
+
 		// Circle intersects the line
-		const auto length = std::sqrt(c.radius * c.radius - dist);
-		const auto p1 = closestPoint + l.vector().norm() * length;
-		const auto p2 = closestPoint - l.vector().norm() * length;
+		const auto length = std::sqrt(c.radius * c.radius - distToLine);
+		const auto p1 = closestPointToLine + l.vector().norm() * length;
+		const auto p2 = closestPointToLine - l.vector().norm() * length;
 
 		std::vector<olc::v_2d<T2>> intersections;
 		intersections.reserve(2);

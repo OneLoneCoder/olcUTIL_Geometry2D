@@ -1768,4 +1768,53 @@ namespace olc::utils::geom2d
 			return ray.origin + ray.direction * std::min(s1, s2);
 		}
 	}
+
+
+
+	// RAYS =================================================================================================================
+
+	// intersects(q,q)
+	// Get intersection points where a ray intersects a ray
+	template<typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r1, const ray<T2>& r2)
+	{
+		// TODO:
+		return {};
+	}
+
+	// intersects(q,l)
+	// Get intersection points where a ray intersects a line
+	template<typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r, const line<T2>& l)
+	{
+		// TODO:
+		return {};
+	}
+
+	// intersects(q,c)
+	// Get intersection points where a ray intersects a circle
+	template<typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r, const circle<T2>& c)
+	{
+		// TODO:
+		return {};
+	}
+
+	// intersects(q,r)
+	// Get intersection points where a ray intersects a rectangle
+	template<typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r, const rect<T2>& c)
+	{
+		// TODO:
+		return {};
+	}
+
+	// intersects(q,t)
+	// Get intersection points where a ray intersects a triangle
+	template<typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r, const triangle<T2>& t)
+	{
+		// TODO:
+		return {};
+	}
 }

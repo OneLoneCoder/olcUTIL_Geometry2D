@@ -1741,13 +1741,13 @@ namespace olc::utils::geom2d
 	// project(c,c)
 	// project a circle, onto a circle, via a ray (i.e. how far along the ray can the circle travel until it contacts the other circle?)
 	template<typename T1, typename T2, typename T3>
-	inline std::optional<olc::v_2d<T1>> project(const circle<T1>& c1, const circle<T2>& c2, const ray<T3>& ray)
+	inline std::optional<olc::v_2d<T1>> project(const circle<T1>& c1, const circle<T2>& c2, const ray<T3>& q)
 	{
 		// Inspired by https://math.stackexchange.com/a/929240
 
-		double A = ray.direction.mag2();
-		double B = 2.0 * (ray.origin.dot(ray.direction) - c2.pos.dot(ray.direction));
-		double C = c2.pos.mag2() + ray.origin.mag2() - (2.0 * c2.pos.x * ray.origin.x) - (2.0 * c2.pos.y * ray.origin.y) - ((c1.radius + c2.radius) * (c1.radius + c2.radius));
+		double A = q.direction.mag2();
+		double B = 2.0 * (q.origin.dot(q.direction) - c2.pos.dot(q.direction));
+		double C = c2.pos.mag2() + q.origin.mag2() - (2.0 * c2.pos.x * q.origin.x) - (2.0 * c2.pos.y * q.origin.y) - ((c1.radius + c2.radius) * (c1.radius + c2.radius));
 		double D = B * B - 4.0 * A * C;
 
 		if (D < 0.0)
@@ -1761,11 +1761,11 @@ namespace olc::utils::geom2d
 			if (s1 < 0 && s2 < 0)
 				return std::nullopt;
 			if (s1 < 0)
-				return ray.origin + ray.direction * s2;
+				return q.origin + q.direction * s2;
 			if (s2 < 0)
-				return ray.origin + ray.direction * s1;
+				return q.origin + q.direction * s1;
 
-			return ray.origin + ray.direction * std::min(s1, s2);
+			return q.origin + q.direction * std::min(s1, s2);
 		}
 	}
 
@@ -1794,10 +1794,31 @@ namespace olc::utils::geom2d
 	// intersects(q,c)
 	// Get intersection points where a ray intersects a circle
 	template<typename T1, typename T2>
-	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r, const circle<T2>& c)
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& q, const circle<T2>& c)
 	{
-		// TODO:
-		return {};
+		// Look familiar?
+		double A = q.direction.mag2();
+		double B = 2.0 * (q.origin.dot(q.direction) - c.pos.dot(q.direction));
+		double C = c.pos.mag2() + q.origin.mag2() - (2.0 * c.pos.x * q.origin.x) - (2.0 * c.pos.y * q.origin.y) - (c.radius * c.radius);
+		double D = B * B - 4.0 * A * C;
+
+		if (D < 0.0)
+			return {};
+		else
+		{
+			std::vector<olc::v_2d<T2>> vIntersects;
+			const auto sD = std::sqrt(D);
+			const auto s1 = (-B + sD) / (2.0 * A);
+			const auto s2 = (-B - sD) / (2.0 * A);
+
+			if (s1 < 0 && s2 < 0)
+				return std::nullopt;
+			if (s1 >= 0)
+				vIntersects.push_back(q.origin + q.direction * s1);
+			if (s2 >= 0)
+				vIntersects.push_back(q.origin + q.direction * s2);			
+			return vIntersects;
+		}
 	}
 
 	// intersects(q,r)

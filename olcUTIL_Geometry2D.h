@@ -91,6 +91,8 @@
 #include <vector>
 #include <algorithm>
 #include <cstdint>
+#include <optional>
+#include <cassert>
 
 #ifndef OLC_V2D_TYPE
 #define OLC_V2D_TYPE
@@ -660,6 +662,15 @@ namespace olc::utils::geom2d
 	inline olc::v_2d<T1> closest(const circle<T1>& c, const olc::v_2d<T2>& p)
 	{		
 		return c.pos + olc::vd2d(p - c.pos).norm() * c.radius;
+	}
+
+	// closest(c,l)
+	// Returns closest point on circle to line
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const circle<T1>& c, const line<T2>& l)
+	{
+		const auto p1 = closest(l, c.pos);
+		return c.pos + olc::vd2d(p1 - c.pos).norm() * c.radius;
 	}
 
 	// closest(r,p)
@@ -1449,6 +1460,7 @@ namespace olc::utils::geom2d
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const circle<T2>& c)
 	{
 		// TODO:
+		// assert(0);
 		return {};
 	}
 
@@ -1723,4 +1735,37 @@ namespace olc::utils::geom2d
 		return envelope_c(std::forward<T>(t));
 	}
 
+
+	// PROJECTIONS ==========================================================================================================
+
+	// project(c,c)
+	// project a circle, onto a circle, via a ray (i.e. how far along the ray can the circle travel until it contacts the other circle?)
+	template<typename T1, typename T2, typename T3>
+	inline std::optional<olc::v_2d<T1>> project(const circle<T1>& c1, const circle<T2>& c2, const ray<T3>& ray)
+	{
+		// Inspired by https://math.stackexchange.com/a/929240
+
+		double A = ray.direction.mag2();
+		double B = 2.0 * (ray.origin.dot(ray.direction) - c2.pos.dot(ray.direction));
+		double C = c2.pos.mag2() + ray.origin.mag2() - (2.0 * c2.pos.x * ray.origin.x) - (2.0 * c2.pos.y * ray.origin.y) - ((c1.radius + c2.radius) * (c1.radius + c2.radius));
+		double D = B * B - 4.0 * A * C;
+
+		if (D < 0.0)
+			return std::nullopt;
+		else
+		{
+			const auto sD = std::sqrt(D);
+			const auto s1 = (-B + sD) / (2.0 * A);
+			const auto s2 = (-B - sD) / (2.0 * A);
+
+			if (s1 < 0 && s2 < 0)
+				return std::nullopt;
+			if (s1 < 0)
+				return ray.origin + ray.direction * s2;
+			if (s2 < 0)
+				return ray.origin + ray.direction * s1;
+
+			return ray.origin + ray.direction * std::min(s1, s2);
+		}
+	}
 }

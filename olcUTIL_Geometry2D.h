@@ -137,47 +137,47 @@
 */
 
 /*
-	Function Matrix - Function(A, B)
-	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Function Matrix - Function(A, B)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	A      B>|    POINT     |     LINE     |     RECT     |    CIRCLE    |   TRIANGLE   |      RAY     |
-	---------+--------------+--------------+--------------+--------------+--------------+--------------+
-	POINT    | contains     | contains     | contains     | contains     | contains     |              |
-	         | closest      | closest      | closest      | closest      | closest      | closest      |
-			 | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
-			 | intersects   | intersects   | intersects   | intersects   | intersects   |              |
-			 |              |              |              |              |              |              |
-	---------+--------------+--------------+--------------+--------------+--------------+--------------+
-	LINE     | contains     | contains     | contains     | contains     | contains     |              |
-	         | closest      |              |              | closest      |              |              |
-			 | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
-			 | intersects   | intersects   | intersects   | intersects   | intersects   |              |
-			 |              |              |              |              |              |              |
-	---------+--------------+--------------+--------------+--------------+--------------+--------------+
-	RECT     | contains     | contains     | contains     | contains     | contains     |              |
-	         | closest      |              |              |              |              |              |
-			 | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
-			 | intersects   | intersects   | intersects   | intersects   | intersects   |              |
-			 |              |              |              |              |              |              |
-	---------+--------------+--------------+--------------+--------------+--------------+--------------+
-	CIRCLE   | contains     | contains     | contains     | contains     | contains     |              |
-	         | closest      | closest      |              |              |              |              |
+    A      B>|    POINT     |     LINE     |     RECT     |    CIRCLE    |   TRIANGLE   |      RAY     |
+    ---------+--------------+--------------+--------------+--------------+--------------+--------------+
+    POINT    | contains     | contains     | contains     | contains     | contains     |              |
+             | closest      | closest      | closest      | closest      | closest      | closest      |
              | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
-	         | intersects   | intersects   | intersects   | intersects   | intersects   |              |
-	         | project      | project      |              | project      |              |              |
-	---------+--------------+--------------+--------------+--------------+--------------+--------------+
-	TRIANGLE | contains     | contains     | contains     | contains     | contains     |              |
-	         | closest      |              |              |              |              |              |
-			 | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
-			 | intersects   | intersects   | intersects   | intersects   | intersects   |              |
-			 |              |              |              |              |              |              |
-	---------+--------------+--------------+--------------+--------------+--------------+--------------+
-	RAY      |              |              |              |              |              |              |
-	         |              |              |              |              |              |              |
-			 |              |              |              |              |              |              |
-			 |              | intersects   | intersects   | intersects   |              | intersects   |
-			 |              |              |              |              |              |              |
-	---------+--------------+--------------+--------------+--------------+--------------+--------------+
+             | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+             |              |              |              |              |              |              |
+    ---------+--------------+--------------+--------------+--------------+--------------+--------------+
+    LINE     | contains     | contains     | contains     | contains     | contains     |              |
+             | closest      |              |              | closest      |              |              |
+             | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
+             | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+             |              |              |              |              |              |              |
+    ---------+--------------+--------------+--------------+--------------+--------------+--------------+
+    RECT     | contains     | contains     | contains     | contains     | contains     |              |
+             | closest      |              |              |              |              |              |
+             | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
+             | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+             |              |              |              |              |              |              |
+    ---------+--------------+--------------+--------------+--------------+--------------+--------------+
+    CIRCLE   | contains     | contains     | contains     | contains     | contains     |              |
+             | closest      | closest      |              |              |              |              |
+             | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
+             | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+             | project      | project      |              | project      |              |              |
+    ---------+--------------+--------------+--------------+--------------+--------------+--------------+
+    TRIANGLE | contains     | contains     | contains     | contains     | contains     |              |
+             | closest      |              |              |              |              |              |
+             | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
+             | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+             |              |              |              |              |              |              |
+    ---------+--------------+--------------+--------------+--------------+--------------+--------------+
+    RAY      |              |              |              |              |              |              |
+             |              |              |              |              |              |              |
+             |              |              |              |              |              |              |
+             |              | intersects   | intersects   | intersects   | intersects   | intersects   |
+             |              |              |              |              |              |              |
+    ---------+--------------+--------------+--------------+--------------+--------------+--------------+
 */
 
 #pragma once

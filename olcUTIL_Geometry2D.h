@@ -496,6 +496,11 @@ namespace olc::utils::geom2d
 	{
 		olc::v_2d<T> origin;
 		olc::v_2d<T> direction;
+
+		inline ray(const olc::v_2d<T>& o = { T(0), T(0) },
+			const olc::v_2d<T>& d = { T(0), T(0) })
+			: origin(o), direction(d)
+		{ }
 	};
 
 	template<typename T>
@@ -638,12 +643,14 @@ namespace olc::utils::geom2d
 	// =========================================================================================================================
 	// Closest(shape, point) ===================================================================================================
 
+	// Closest location on [SHAPE] to Point
+
 	// closest(p,p)
-	// Returns closest point to point
+	// Returns closest point on point to any shape (aka the original point) :P
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const olc::v_2d<T1>& p1, [[maybe_unused]] const olc::v_2d<T2>& p2)
+	inline olc::v_2d<T1> closest(const olc::v_2d<T1>& p, [[maybe_unused]] const T2& anything_who_cares)
 	{
-		return p1;
+		return p;
 	}
 
 	// closest(l,p)
@@ -662,15 +669,6 @@ namespace olc::utils::geom2d
 	inline olc::v_2d<T1> closest(const circle<T1>& c, const olc::v_2d<T2>& p)
 	{		
 		return c.pos + olc::vd2d(p - c.pos).norm() * c.radius;
-	}
-
-	// closest(c,l)
-	// Returns closest point on circle to line
-	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const circle<T1>& c, const line<T2>& l)
-	{
-		const auto p1 = closest(l, c.pos);
-		return c.pos + olc::vd2d(p1 - c.pos).norm() * c.radius;
 	}
 
 	// closest(r,p)
@@ -713,7 +711,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const triangle<T1>& t, const olc::v_2d<T2>& p)
 	{
-		olc::utils::geom2d::line<T1> l{t.pos[0], t.pos[1]};
+		olc::utils::geom2d::line<T1> l{ t.pos[0], t.pos[1] };
 		auto p0 = closest(l, p);
 		auto d0 = (p0 - p).mag2();
 
@@ -725,22 +723,135 @@ namespace olc::utils::geom2d
 		auto p2 = closest(l, p);
 		auto d2 = (p2 - p).mag2();
 
-		if((d0 <= d1) && (d0 <= d2)) {
+		if ((d0 <= d1) && (d0 <= d2)) {
 			return p0;
-		} else if((d1 <= d0) && (d1 <= d2)) {
+		}
+		else if ((d1 <= d0) && (d1 <= d2)) {
 			return p1;
-		} else {
+		}
+		else {
 			return p2;
 		}
 	}
 
 
+	// Closest location on [SHAPE] to Line
+
+	// closest(l,l)
+	// Returns closest point on line to line
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const line<T1>& l1, const line<T2>& l2)
+	{
+		// TODO:
+		return {};
+	}
+
+	// closest(r,l)
+	// Returns closest point on rectangle to line
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const rect<T1>& r, const line<T2>& l)
+	{
+		// TODO:
+		return {};
+	}
+
+	// closest(c,l)
+	// Returns closest point on circle to line
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const circle<T1>& c, const line<T2>& l)
+	{
+		const auto p1 = closest(l, c.pos);
+		return c.pos + olc::vd2d(p1 - c.pos).norm() * c.radius;
+	}
+
+	// closest(t,l)
+	// Returns closest point on triangle to line
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const triangle<T1>& t, const line<T2>& l)
+	{
+		// TODO:
+		return {};
+	}
 
 
+	// Closest location on [SHAPE] to Circle
+
+	// closest(l,c)
+	// Returns closest point on line to circle
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const line<T1>& l, const circle<T2>& c)
+	{
+		const auto p1 = closest(c, l); // Closest point on circle to line
+		return closest(l, p1);
+	}
+
+	// closest(r,c)
+	// Returns closest point on rectangle to circle
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const rect<T1>& r, const circle<T2>& l)
+	{
+		// TODO:
+		return {};
+	}
+
+	// closest(c,c)
+	// Returns closest point on circle to circle
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const circle<T1>& c, const circle<T2>& l)
+	{
+		// TODO:
+		return {};
+	}
+
+	// closest(t,c)
+	// Returns closest point on triangle to circle
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const triangle<T1>& r, const circle<T2>& l)
+	{
+		// TODO:
+		return {};
+	}
 
 
+	// Closest location on [SHAPE] to Triangle
 
+	// closest(l,t)
+	// Returns closest point on line to triangle
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const line<T1>& l, const triangle<T2>& c)
+	{
+		// TODO:
+		return {};
+	}
 
+	// closest(r,t)
+	// Returns closest point on rectangle to triangle
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const rect<T1>& r, const triangle<T2>& l)
+	{
+		// TODO:
+		return {};
+	}
+
+	// closest(c,t)
+	// Returns closest point on circle to triangle
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const circle<T1>& c, const triangle<T2>& l)
+	{
+		// TODO:
+		return {};
+	}
+
+	// closest(t,t)
+	// Returns closest point on triangle to triangle
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const triangle<T1>& r, const triangle<T2>& l)
+	{
+		// TODO:
+		return {};
+	}
+
+	
 
 
 
@@ -1725,12 +1836,14 @@ namespace olc::utils::geom2d
 		return rect<T1>(vMin, vMax - vMin);
 	}
 
-	template<typename T> auto bounding_box(T&& t)
+	template<typename T> 
+	inline constexpr auto bounding_box(T&& t)
 	{
 		return envelope_r(std::forward<T>(t));
 	}
 
-	template<typename T> auto bounding_circle(T&& t)
+	template<typename T> 
+	inline constexpr auto bounding_circle(T&& t)
 	{
 		return envelope_c(std::forward<T>(t));
 	}
@@ -1769,26 +1882,128 @@ namespace olc::utils::geom2d
 		}
 	}
 
+	// project(c,l)
+	// project a circle, onto a line segment, via a ray
+	template<typename T1, typename T2, typename T3>
+	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const line<T2>& l, const ray<T3>& q)
+	{
+		// Treat line segment as capsule with radius that of the circle
+		// and treat the circle as a point
+
+		// First do we hit ends of line segment, inflated to be circles		
+		const auto vHitsStartCirc = intersects(q, circle<T2>(l.start, c.radius));
+		const auto vHitsEndCirc = intersects(q, circle<T2>(l.end, c.radius));
+
+		// Now create two line segments in parallel to the original, that join
+		// up the end circles to form the sides of the capsule
+		const auto displace = l.vector().norm().perp() * c.radius;
+		const auto vHitsSide1 = intersects(q, line<T2>(l.start + displace, l.end + displace));
+		const auto vHitsSide2 = intersects(q, line<T2>(l.start - displace, l.end - displace));
+
+		// Bring the multitude of points to one place
+		std::vector<olc::v_2d<T2>> vAllIntersections;
+		vAllIntersections.insert(vAllIntersections.end(), vHitsStartCirc.begin(), vHitsStartCirc.end());
+		vAllIntersections.insert(vAllIntersections.end(), vHitsEndCirc.begin(), vHitsEndCirc.end());
+		vAllIntersections.insert(vAllIntersections.end(), vHitsSide1.begin(), vHitsSide1.end());
+		vAllIntersections.insert(vAllIntersections.end(), vHitsSide2.begin(), vHitsSide2.end());
+
+		if (vAllIntersections.size() == 0)
+		{
+			// No intersections at all, so
+			return std::nullopt;
+		}
+
+		// Find closest
+		double dClosest = std::numeric_limits<double>::max();
+		olc::v_2d<T2> vClosest;
+		for (const auto& vContact : vAllIntersections)
+		{
+			double dDistance = (vContact - c.pos).mag2();
+			if (dDistance < dClosest)
+			{
+				dClosest = dDistance;
+				vClosest = vContact;
+			}
+		}
+
+		return vClosest;
+	}
+
+	// project(c,r)
+	// project a circle, onto a rectangle, via a ray
+	template<typename T1, typename T2, typename T3>
+	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const rect<T2>& r, const ray<T3>& q)
+	{
+		// TODO:
+		return std::nullopt;
+	}
+
+	// project(c,t)
+	// project a circle, onto a triangle, via a ray
+	template<typename T1, typename T2, typename T3>
+	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const triangle<T2>& t, const ray<T3>& q)
+	{
+		// TODO:
+		return std::nullopt;
+	}
 
 
 	// RAYS =================================================================================================================
 
 	// intersects(q,q)
-	// Get intersection points where a ray intersects a ray
+	// return intersection point (if it exists) of a ray and a ray
 	template<typename T1, typename T2>
-	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r1, const ray<T2>& r2)
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& q1, const ray<T2>& q2)
 	{
-		// TODO:
-		return {};
+		const auto origin_diff = q2.origin - q1.origin;
+		const auto cp1 = q1.direction.cross(q2.direction);
+		const auto cp2 = origin_diff.cross(q2.direction);
+
+		if (cp1 == 0) // Early rejection
+		{
+			if (cp2 == 0)
+				return { q1.origin }; // co-linear
+			else
+				return {}; // parallel
+		}
+
+		const auto cp3 = origin_diff.cross(q1.direction);
+		const auto t1 = cp2 / cp1; // distance along q1 to intersection
+		const auto t2 = cp3 / cp1; // distance along q2 to intersection
+
+		if (t1 >= 0 && t2 >= 0)
+			return { q1.origin + q1.direction * t1 }; // Intersection, both rays positive
+		else
+			return {}; // Intersection, but behind a rays origin, so not really an intersection in context
 	}
 
 	// intersects(q,l)
-	// Get intersection points where a ray intersects a line
+	// return intersection point (if it exists) of a ray and a line segment
 	template<typename T1, typename T2>
-	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r, const line<T2>& l)
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& q, const line<T2>& l)
 	{
-		// TODO:
-		return {};
+		const auto line_direction = l.vector();
+		const auto origin_diff = l.start - q.origin;
+		const auto cp1 = q.direction.cross(line_direction);
+		const auto cp2 = origin_diff.cross(line_direction);
+
+		if (cp1 == 0) // Early rejection
+		{
+			if (cp2 == 0)
+				return { q.origin }; // co-linear
+			else
+				return {}; // parallel
+		}
+
+		const auto cp3 = origin_diff.cross(q.direction);
+		const auto t1 = cp2 / cp1; // distance along ray to intersection
+		const auto t2 = cp3 / cp1; // distance along line segment to intersection
+
+		if (t1 >= 0 && t2 >= 0 && t2 <= 1)
+			return { q.origin + q.direction * t1 }; // Intersection, both rays positive
+		else
+			return {};	// Intersection, but behind a rays origin, or outside line segment bounds.
+						// so not really an intersection in context
 	}
 
 	// intersects(q,c)
@@ -1806,25 +2021,25 @@ namespace olc::utils::geom2d
 			return {};
 		else
 		{
-			std::vector<olc::v_2d<T2>> vIntersects;
 			const auto sD = std::sqrt(D);
 			const auto s1 = (-B + sD) / (2.0 * A);
 			const auto s2 = (-B - sD) / (2.0 * A);
 
 			if (s1 < 0 && s2 < 0)
-				return std::nullopt;
-			if (s1 >= 0)
-				vIntersects.push_back(q.origin + q.direction * s1);
-			if (s2 >= 0)
-				vIntersects.push_back(q.origin + q.direction * s2);			
-			return vIntersects;
+				return {};
+			if (s1 < 0)
+				return { q.origin + q.direction * s2 };
+			if (s2 < 0)
+				return { q.origin + q.direction * s1 };
+
+			return { q.origin + q.direction * std::min(s1, s2) };
 		}
 	}
 
 	// intersects(q,r)
 	// Get intersection points where a ray intersects a rectangle
 	template<typename T1, typename T2>
-	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r, const rect<T2>& c)
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& q, const rect<T2>& r)
 	{
 		// TODO:
 		return {};
@@ -1833,7 +2048,7 @@ namespace olc::utils::geom2d
 	// intersects(q,t)
 	// Get intersection points where a ray intersects a triangle
 	template<typename T1, typename T2>
-	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r, const triangle<T2>& t)
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& q, const triangle<T2>& t)
 	{
 		// TODO:
 		return {};

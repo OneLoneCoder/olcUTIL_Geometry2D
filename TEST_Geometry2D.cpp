@@ -374,6 +374,7 @@ public:
 				bOverlaps = overlaps(shapeLine2, shapeCircle1);
 				bContains = contains(shapeLine2, shapeCircle1);
 				vIntersections = intersects(shapeLine2, shapeCircle1);
+				vClosest = closest(shapeCircle1, shapeLine2);
 			}
 
 			if (nShape2 == Shapes::Rect)

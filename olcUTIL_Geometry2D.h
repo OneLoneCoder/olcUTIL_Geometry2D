@@ -67,6 +67,57 @@
 */
 
 /*
+	What Is This?
+	~~~~~~~~~~~~~
+
+	I've worked with 2D stuff for decades and I'm tired of reapeatedly researching, deriving
+	and implementing geometric analysis routines, so wanted a "one-stop-shop" to collate all
+	these mathematics. You don't even need olc::PixelGameEngine, this file will run as a
+	standalone 2D vector/geometry utility.
+
+	As well as a robust 2D Vector implementation, this file offers definitions of the following
+	shapes:
+
+		point		- A 2D (x,y) vector from (0,0)
+		line		- A line segment defined by a start and end point
+		circle		- A circle defined by a middle point and a radius
+		rectangle	- An axis aligned quad defined by a top left point, and a size
+		triangle	- A triangle defined by 3 points
+		ray			- A special case "line" with an origin and a direction
+
+	Functions have been provided that yield useful analyses for almost every combination
+	of shapes. The function groups all have the same names, and are differentiated via
+	argument type:
+
+		point closest(a, b)
+			Returns closest point on Shape A to Shape B
+
+		bool overlaps(a, b)
+			Returns true if any part of Shape A overlaps any part of Shape B, including boundaries
+
+		bool contains(a, b)
+			Returns true if Shape A wholly contains Shape B within and including it's boundary
+
+		vector<point> intersects(a, b)
+			Returns a vector of points where Shape A boundary intersects with Shape B boundary
+
+		optional<point> project(a, b, ray)
+			Projects Shape A along a ray, until and if it contacts shape B. If it never contacts
+			then nothing is returned. If it does contact the closest position Shape A can be to
+			Shape B is returned without the shapes overlapping
+
+		rect envelope_r(a) / bounding_box(a)
+			Returns the minimum area rectangle that fully encompasses Shape A
+
+		rect envelope_c(a) / bounding_circle(a)
+			Returns the minimum area circle that fully encompasses Shape A
+
+		ray reflect(ray, a)
+			Returns a ray that is a reflection of supplied incident ray against Shape A
+	
+*/
+
+/*
 	Quick Navigation
 	~~~~~~~~~~~~~~~~
 
@@ -77,12 +128,56 @@
 	where:
 
 	f = overlaps, intersects, contains, closest, envelope_r, envelope_b
-	a = p, l, r, c, t, pol (point, line, rect, circ, triangle, polygon)
+	a = p, l, r, c, t, q, pol (point, line, rect, circ, triangle, ray, polygon)
 
 	example:
 
 	"contains(r,c)"		- takes you to implementation for contains(rect, circ) 
 						- Does the rectangle contain the circle?
+*/
+
+/*
+	Function Matrix - Function(A, B)
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+	A      B>|    POINT     |     LINE     |     RECT     |    CIRCLE    |   TRIANGLE   |      RAY     |
+	---------+--------------+--------------+--------------+--------------+--------------+--------------+
+	POINT    | contains     | contains     | contains     | contains     | contains     |              |
+	         |              |              |              |              |              |              |
+			 | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
+			 | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+			 |              |              |              |              |              |              |
+	---------+--------------+--------------+--------------+--------------+--------------+--------------+
+	LINE     | contains     | contains     | contains     | contains     | contains     |              |
+	         |              |              |              |              |              |              |
+			 | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
+			 | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+			 |              |              |              |              |              |              |
+	---------+--------------+--------------+--------------+--------------+--------------+--------------+
+	RECT     | contains     | contains     | contains     | contains     | contains     |              |
+	         |              |              |              |              |              |              |
+			 | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
+			 | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+			 |              |              |              |              |              |              |
+	---------+--------------+--------------+--------------+--------------+--------------+--------------+
+	CIRCLE   | contains     | contains     | contains     | contains     | contains     |              |
+	         | closest      | closest      |              |              |              |              |
+             | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
+	         | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+	         | project      | project      |              | project      |              |              |
+	---------+--------------+--------------+--------------+--------------+--------------+--------------+
+	TRIANGLE | contains     | contains     | contains     | contains     | contains     |              |
+	         |              |              |              |              |              |              |
+			 | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
+			 | intersects   | intersects   | intersects   | intersects   | intersects   |              |
+			 |              |              |              |              |              |              |
+	---------+--------------+--------------+--------------+--------------+--------------+--------------+
+	RAY      |              |              |              |              |              |              |
+	         |              |              |              |              |              |              |
+			 |              |              |              |              |              |              |
+			 |              | intersects   | intersects   | intersects   |              | intersects   |
+			 |              |              |              |              |              |              |
+	---------+--------------+--------------+--------------+--------------+--------------+--------------+
 */
 
 #pragma once

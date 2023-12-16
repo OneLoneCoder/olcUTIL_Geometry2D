@@ -1914,6 +1914,15 @@ namespace olc::utils::geom2d
 
 	// PROJECTIONS ==========================================================================================================
 
+	// project(c,p)
+	// project a circle, onto a point, via a ray (i.e. how far along the ray can the circle travel until it contacts the point?)
+	template<typename T1, typename T2, typename T3>
+	inline std::optional<olc::v_2d<T1>> project(const circle<T1>& c, const olc::v_2d<T2>& p, const ray<T3>& q)
+	{
+		return project(c, circle<T2>(p, 0), q);
+	}
+
+
 	// project(c,c)
 	// project a circle, onto a circle, via a ray (i.e. how far along the ray can the circle travel until it contacts the other circle?)
 	template<typename T1, typename T2, typename T3>

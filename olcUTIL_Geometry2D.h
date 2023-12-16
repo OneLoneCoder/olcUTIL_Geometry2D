@@ -409,6 +409,35 @@ namespace olc::utils::geom2d
 	// Floating point error margin
 	inline const double epsilon = 0.001;
 
+	namespace internal
+	{
+		template<typename T>
+		inline std::vector<olc::v_2d<T>> filter_duplicate_points(const std::vector<olc::v_2d<T>>& points) {
+			std::vector<olc::v_2d<T>> filtered_points;
+
+			for (const auto& point : points)
+			{
+				bool is_duplicate = false;
+
+				for (const auto& filtered_point : filtered_points)
+				{
+					if (std::abs(point.x - filtered_point.x) < epsilon && std::abs(point.y - filtered_point.y) < epsilon)
+					{
+						is_duplicate = true;
+						break;
+					}
+				}
+
+				if (!is_duplicate)
+				{
+					filtered_points.push_back(point);
+				}
+			}
+
+			return filtered_points;
+		}
+	};
+
 	//https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
 	template <typename T>
 	constexpr int sgn(T val) { return (T(0) < val) - (val < T(0)); }
@@ -563,6 +592,11 @@ namespace olc::utils::geom2d
 		{
 			return T(2) * (size.x + size.y);
 		}
+
+		// Returns side count: 4
+		inline constexpr size_t side_count() const {
+			return 4;
+		}
 	};
 
 
@@ -629,6 +663,11 @@ namespace olc::utils::geom2d
 			return line(pos[0], pos[1]).length()
 				+ line(pos[1], pos[2]).length()
 				+ line(pos[2], pos[0]).length();
+		}
+
+		// Returns side count: 3
+		inline constexpr size_t side_count() const {
+			return 3;
 		}
 	};
 
@@ -909,7 +948,7 @@ namespace olc::utils::geom2d
 		T2 sign = A < T2(0) ? T2(-1) : T2(1);
 		T2 s = (t.pos[0].y * t.pos[2].x - t.pos[0].x * t.pos[2].y + (t.pos[2].y - t.pos[0].y) * p.x + (t.pos[0].x - t.pos[2].x) * p.y) * sign;
 		T2 v = (t.pos[0].x * t.pos[1].y - t.pos[0].y * t.pos[1].x + (t.pos[0].y - t.pos[1].y) * p.x + (t.pos[1].x - t.pos[0].x) * p.y) * sign;
-		return s > T2(0) && v > T2(0) && (s + v) < T2(2) * A * sign;
+		return s >= T2(0) && v >= T2(0) && (s + v) <= T2(2) * A * sign;
 	}
 
 
@@ -984,10 +1023,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const rect<T1>& r, const olc::v_2d<T2>& p)
 	{
-		if (contains(r.top(), p)) return { p };
-		if (contains(r.bottom(), p)) return { p };
-		if (contains(r.left(), p)) return { p };
-		if (contains(r.right(), p)) return { p };
+		for (size_t i = 0; i < r.side_count(); i++)
+			if (contains(r.side(i), p))
+				return { p };
+
 		return {};
 	}
 
@@ -1007,10 +1046,12 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const olc::v_2d<T2>& p)
 	{
-		if (contains(t.side(0), p)) return { p };
-		if (contains(t.side(1), p)) return { p };
-		if (contains(t.side(2), p)) return { p };
+		for (size_t i = 0; i < t.side_count(); i++)
+			if (contains(t.side(i), p))
+				return { p };
+
 		return {};
+
 	}
 
 
@@ -1158,17 +1199,15 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const rect<T1>& r, const line<T2>& l)
 	{
-		// TODO: this returns 2 intersections, when line intersects rectangle's corner (should return just 1)
-		std::vector<olc::v_2d<T2>>intersections;
-		std::vector<olc::v_2d<T2>>result=intersects(r.left(),l);
-		if(result.size()>0)intersections.push_back(result[0]);
-		result=intersects(r.right(),l);
-		if(result.size()>0)intersections.push_back(result[0]);
-		result=intersects(r.top(),l);
-		if(result.size()>0)intersections.push_back(result[0]);
-		result=intersects(r.bottom(),l);
-		if(result.size()>0)intersections.push_back(result[0]);
-		return intersections;
+		std::vector<olc::v_2d<T2>> intersections;
+
+		for (size_t i = 0; i < r.side_count(); i++)
+		{
+			auto v = intersects(r.side(i), l);
+			intersections.insert(intersections.end(), v.begin(), v.end());
+		}
+
+		return internal::filter_duplicate_points(intersections);
 	}
 
 	// intersects(c,l)
@@ -1208,7 +1247,7 @@ namespace olc::utils::geom2d
 		if ((p2 - closest(l, p2)).mag2() < epsilon * epsilon)
 			intersections.push_back(p2);
 
-		return intersections;
+		return internal::filter_duplicate_points(intersections);
 	}
 
 	// intersects(t,l)
@@ -1217,24 +1256,14 @@ namespace olc::utils::geom2d
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const line<T2>& l)
 	{
 		std::vector<olc::v_2d<T2>> intersections;
-		intersections.reserve(2);
 
-		auto lineVsLine = [&intersections](const auto& l1, const auto& l2) {
-			auto ints = intersects(l1, l2);
+		for (size_t i = 0; i < t.side_count(); i++)
+		{
+			auto v = intersects(t.side(i), l);
+			intersections.insert(intersections.end(), v.begin(), v.end());
+		}
 
-			for (auto&& i : ints)
-				intersections.push_back(std::move(i));
-		};
-
-		lineVsLine(line(t.pos[0], t.pos[1]), l);
-		lineVsLine(line(t.pos[1], t.pos[2]), l);
-		lineVsLine(line(t.pos[0], t.pos[2]), l);
-
-		// remove potential duplicate intersection.
-		if (intersections.size() == 2 && intersections[0] == intersections[1])
-			intersections.pop_back();
-
-		return intersections;
+		return internal::filter_duplicate_points(intersections);
 	}
 
 
@@ -1272,8 +1301,8 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const rect<T1>& r1, const rect<T2>& r2)
 	{
-		return (r2.pos.x >= r1.pos.x) && (r2.pos.x + r2.size.x < r1.pos.x + r1.size.x) &&
-			(r2.pos.y >= r1.pos.y) && (r2.pos.y + r2.size.y < r1.pos.y + r1.size.y);
+		return (r2.pos.x >= r1.pos.x) && (r2.pos.x + r2.size.x <= r1.pos.x + r1.size.x) &&
+			(r2.pos.y >= r1.pos.y) && (r2.pos.y + r2.size.y <= r1.pos.y + r1.size.y);
 	}
 
 	// contains(c,r)
@@ -1321,8 +1350,8 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const rect<T1>& r1, const rect<T2>& r2)
 	{
-		return (r1.pos.x < r2.pos.x + r2.size.x && r1.pos.x + r1.size.x >= r2.pos.x &&
-			r1.pos.y < r2.pos.y + r2.size.y && r1.pos.y + r1.size.y >= r2.pos.y);
+		return (r1.pos.x <= r2.pos.x + r2.size.x && r1.pos.x + r1.size.x >= r2.pos.x &&
+			r1.pos.y <= r2.pos.y + r2.size.y && r1.pos.y + r1.size.y >= r2.pos.y);
 	}
 
 	// overlaps(c,r)
@@ -1373,8 +1402,14 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const rect<T1>& r1, const rect<T2>& r2)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> intersections;
+
+		for (size_t i = 0; i < r2.side_count(); i++) {
+			auto v = intersects(r1, r2.side(i));
+			intersections.insert(intersections.end(), v.begin(), v.end());
+		}
+
+		return internal::filter_duplicate_points(intersections);
 	}
 
 	// intersects(c,r)
@@ -1382,8 +1417,15 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const circle<T1>& c, const rect<T2>& r)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> intersections;
+
+		for (size_t i = 0; i < r.side_count(); i++)
+		{
+			auto v = intersects(c, r.side(i));
+			intersections.insert(intersections.end(), v.begin(), v.end());
+		}
+
+		return internal::filter_duplicate_points(intersections);
 	}
 
 	// intersects(t,r)
@@ -1391,8 +1433,14 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const rect<T2>& r)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> intersections;
+
+		for (size_t i = 0; i < r.side_count(); i++) {
+			auto v = intersects(t, r.side(i));
+			intersections.insert(intersections.end(), v.begin(), v.end());
+		}
+
+		return internal::filter_duplicate_points(intersections);
 	}
 
 
@@ -1570,9 +1618,14 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const circle<T2>& c)
 	{
-		// TODO:
-		// assert(0);
-		return {};
+		std::vector<olc::v_2d<T2>> intersections;
+
+		for (size_t i = 0; i < t.side_count(); i++) {
+			auto v = intersects(c, t.side(i));
+			intersections.insert(intersections.end(), v.begin(), v.end());
+		}
+
+		return internal::filter_duplicate_points(intersections);
 	}
 
 
@@ -1621,8 +1674,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const circle<T1>& c, const triangle<T2>& t)
 	{
-		// TODO:
-		return false;
+		return contains(c, t.pos[0])
+			&& contains(c, t.pos[1])
+			&& contains(c, t.pos[2]);
 	}
 
 	// contains(t,t)
@@ -1630,8 +1684,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const triangle<T1>& t1, const triangle<T2>& t2)
 	{
-		// TODO:
-		return false;
+		return contains(t1, t2.pos[0])
+			&& contains(t1, t2.pos[1])
+			&& contains(t1, t2.pos[2]);
 	}
 
 
@@ -1673,8 +1728,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const triangle<T1>& t1, const triangle<T2>& t2)
 	{
-		// TODO:
-		return false;
+		return overlaps(t1, t2.side(0))
+			|| overlaps(t1, t2.side(1))
+			|| overlaps(t1, t2.side(2))
+			|| overlaps(t2, t1.pos[0]);
 	}
 
 
@@ -1716,8 +1773,14 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t1, const triangle<T2>& t2)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T2>> intersections;
+
+		for (size_t i = 0; i < t2.side_count(); i++) {
+			auto v = intersects(t1, t2.side(i));
+			intersections.insert(intersections.end(), v.begin(), v.end());
+		}
+
+		return internal::filter_duplicate_points(intersections);
 	}
 
 
@@ -2041,17 +2104,15 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& q, const rect<T2>& r)
 	{
-		// TODO: this returns 2 intersections, when line intersects rectangle's corner (should return just 1)
 		std::vector<olc::v_2d<T2>> intersections;
-		std::vector<olc::v_2d<T2>> result = intersects(q, r.left());
-		if (result.size() > 0)intersections.push_back(result[0]);
-		result = intersects(q, r.right());
-		if (result.size() > 0)intersections.push_back(result[0]);
-		result = intersects(q, r.top());
-		if (result.size() > 0)intersections.push_back(result[0]);
-		result = intersects(q, r.bottom());
-		if (result.size() > 0)intersections.push_back(result[0]);
-		return intersections;
+
+		for (size_t i = 0; i < r.side_count(); i++)
+		{
+			auto v = intersects(q, r.side(i));
+			intersections.insert(intersections.end(), v.begin(), v.end());
+		}
+
+		return internal::filter_duplicate_points(intersections);
 	}
 
 	// intersects(q,t)
@@ -2060,12 +2121,13 @@ namespace olc::utils::geom2d
 	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& q, const triangle<T2>& t)
 	{
 		std::vector<olc::v_2d<T2>> intersections;
-		std::vector<olc::v_2d<T2>> result = intersects(q, t.pos[1] - t.pos[0]);
-		if (result.size() > 0)intersections.push_back(result[0]);
-		result = intersects(q, t.pos[2] - t.pos[1]);
-		if (result.size() > 0)intersections.push_back(result[0]);
-		result = intersects(q, t.pos[0] - t.pos[2]);
-		if (result.size() > 0)intersections.push_back(result[0]);		
-		return intersections;
+
+		for (size_t i = 0; i < t.side_count(); i++)
+		{
+			auto v = intersects(q, t.side(i));
+			intersections.insert(intersections.end(), v.begin(), v.end());
+		}
+
+		return internal::filter_duplicate_points(intersections);
 	}
 }

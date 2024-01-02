@@ -1,5 +1,5 @@
 /*
-	OneLoneCoder - Geometry 2D v1.01
+	OneLoneCoder - Geometry 2D v2.0
 	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	A collection of 2D Geometric primitives and functions to work with
 	and between them.
@@ -8,7 +8,7 @@
 	License (OLC-3)
 	~~~~~~~~~~~~~~~
 
-	Copyright 2018 - 2023 OneLoneCoder.com
+	Copyright 2018 - 2024 OneLoneCoder.com
 
 	Redistribution and use in source and binary forms, with or without
 	modification, are permitted provided that the following conditions
@@ -49,20 +49,17 @@
 
 	Authors
 	~~~~~~~
-	David Barr, aka javidx9, (c) OneLoneCoder 2019, 2020, 2021, 2022, 2023
-	Gusgo99
-	Gorbit99
-	MagetzUb
-	Dandistine
-	cstdint
-	piratux
-	sigonasr
-	bixxy
-	Qwerasd
+	David Barr, aka javidx9, (c) OneLoneCoder 2019, 2020, 2021, 2022, 2023, 2024
+	
+	With significant contributions from:
+	
+	Piratux, Gusgo99, Gorbit99, MagetzUb, Dandistine
+	cstdint, sigonasr, bixxy, Qwerasd
 
 	Changes:
 	v1.01:		+Made constants inline
 				+Header guards (lol... sigh...)
+	v2.0:		+Major file contribution and restructuring
 
 */
 

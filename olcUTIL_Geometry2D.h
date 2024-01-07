@@ -1583,7 +1583,8 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const circle<T1>& c1, const circle<T2>& c2)
 	{
-		return (c1.pos - c2.pos).mag2() <= (c1.radius - c2.radius) * (c1.radius - c2.radius);
+		return (std::sqrt(std::pow(c2.pos.x - c1.pos.x, 2) + std::pow(c2.pos.y - c1.pos.y, 2)) + c2.radius) <= c1.radius;
+
 	}
 
 	// contains(t,c)

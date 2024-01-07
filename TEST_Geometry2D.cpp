@@ -27,6 +27,7 @@ public:
 		Rect,
 		Circle,
 		Triangle,
+		Ray,
 	};
 
 	struct ShapeWrap
@@ -40,6 +41,7 @@ public:
 	auto MakeRect(const std::vector<olc::vf2d>& p) { return rect<float>{ p[0], (p[1] - p[0]) }; }
 	auto MakeCircle(const std::vector<olc::vf2d>& p) { return circle<float>{ p[0], (p[1]-p[0]).mag() }; }
 	auto MakeTriangle(const std::vector<olc::vf2d>& p) { return triangle<float>{ p[0], p[1], p[2] }; }
+	auto MakeRay(const std::vector<olc::vf2d>& p) { return ray<float>{ p[0], (p[1]-p[0]).norm() }; }
 
 	// NOTE!! NEED A TEMPLATE GURU - IM SURE THIS MESS CAN BE TIDIED UP
 
@@ -310,6 +312,23 @@ public:
 			}
 		}
 
+		if (s1.type == Shapes::Ray)
+		{
+			switch (s2.type)
+			{
+			case Shapes::Point:
+				return intersects(MakeRay(s1.points), MakePoint(s2.points));
+			case Shapes::Line:
+				return intersects(MakeRay(s1.points), MakeLine(s2.points));
+			case Shapes::Rect:
+				return intersects(MakeRay(s1.points), MakeRect(s2.points));
+			case Shapes::Circle:
+				return intersects(MakeRay(s1.points), MakeCircle(s2.points));
+			case Shapes::Triangle:
+				return intersects(MakeRay(s1.points), MakeTriangle(s2.points));
+			}
+		}
+
 	
 		return {};
 	}
@@ -338,6 +357,10 @@ public:
 			const auto t = MakeTriangle(shape.points);
 			DrawTriangle(t.pos[0], t.pos[1], t.pos[2], col);
 			break; }
+		case Shapes::Ray: {
+			const auto t = MakeRay(shape.points);
+			DrawLine(t.origin, t.origin+t.direction * 1000.0f, col, 0xF0F0F0F0);
+			break; }
 		}
 	}
 
@@ -349,7 +372,7 @@ public:
 public: 
 	bool OnUserCreate() override
 	{
-		vecShapes.push_back({ Shapes::Point, { { 10.0f, 10.0f } } });
+		vecShapes.push_back({ Shapes::Point, { { 250.0f, 10.0f } } });
 		vecShapes.push_back({ Shapes::Line, { { 20.0f, 10.0f }, {50.0f, 70.0f} } });
 		vecShapes.push_back({ Shapes::Rect, { { 80.0f, 10.0f }, {110.0f, 60.0f} } });
 		vecShapes.push_back({ Shapes::Circle, { { 130.0f, 20.0f }, {170.0f, 20.0f} } });
@@ -412,7 +435,7 @@ public:
 				const auto& vTargetShape = vecShapes[i];
 
 				const auto vPoints = CheckIntersects(vecShapes[nSelectedShapeIndex], vTargetShape);
-				vIntersections.insert(vIntersections.begin(), vPoints.begin(), vPoints.end());
+				vIntersections.insert(vIntersections.end(), vPoints.begin(), vPoints.end());
 
 				if(CheckContains(vecShapes[nSelectedShapeIndex], vTargetShape))
 					vContains.push_back(i);
@@ -420,6 +443,38 @@ public:
 				if (CheckOverlaps(vecShapes[nSelectedShapeIndex], vTargetShape))
 					vOverlaps.push_back(i);
 			}
+		}
+
+
+		ShapeWrap  ray1, ray2;
+
+
+
+		bool bRayMode = false;
+		if (GetMouse(1).bHeld)
+		{
+			// Enable Ray Mode
+			bRayMode = true;
+
+			ray1 = { Shapes::Ray, {{ 10.0f, 10.0f }, olc::vf2d(GetMousePos())} }; 
+			ray2 = { Shapes::Ray, {{ float(ScreenWidth() - 10), 10.0f }, olc::vf2d(GetMousePos())} };
+
+			
+			for (size_t i = 0; i < vecShapes.size(); i++)
+			{
+				const auto& vTargetShape = vecShapes[i];
+
+				const auto vPoints1 = CheckIntersects(ray1, vTargetShape);
+				vIntersections.insert(vIntersections.end(), vPoints1.begin(), vPoints1.end());
+
+				const auto vPoints2 = CheckIntersects(ray2, vTargetShape);
+				vIntersections.insert(vIntersections.end(), vPoints2.begin(), vPoints2.end());
+			}
+
+			const auto vPoints3 = intersects(MakeRay(ray2.points), MakeRay(ray1.points));
+			vIntersections.insert(vIntersections.end(), vPoints3.begin(), vPoints3.end());
+			
+
 		}
 
 		// Draw All Shapes
@@ -442,6 +497,12 @@ public:
 		// Draw Intersections
 		for (const auto& intersection : vIntersections)
 			FillCircle(intersection, 3, olc::RED);
+
+		if (bRayMode)
+		{
+			DrawShape(ray1, olc::CYAN); 
+			DrawShape(ray2, olc::CYAN);
+		}
 
 		return true;
 	}

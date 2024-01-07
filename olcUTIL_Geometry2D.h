@@ -2142,6 +2142,19 @@ namespace olc::utils::geom2d
 			return {}; // Intersection, but behind a rays origin, so not really an intersection in context
 	}
 
+	// intersects(q,p)
+	// return intersection point (if it exists) of a ray and a point
+	template<typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& q, const v_2d<T2>& p)
+	{
+		const line<T1> l = { q.origin, q.origin + q.direction };
+		
+		if (std::abs(l.side(p)) < epsilon )
+			return { p }; // Intersection
+		else
+			return {}; 
+	}
+
 	// intersects(q,l)
 	// return intersection point (if it exists) of a ray and a line segment
 	template<typename T1, typename T2>

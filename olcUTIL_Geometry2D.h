@@ -670,7 +670,8 @@ namespace olc::utils::geom2d
 			if ((i & 0b11) == 0) return top();
 			if ((i & 0b11) == 1) return right();
 			if ((i & 0b11) == 2) return bottom();
-			if ((i & 0b11) == 3) return left();
+			//if ((i & 0b11) == 3) return left(); // Dumb compilers cant fathom this
+			return left();
 		}
 
 		// Get area of rectangle
@@ -2169,6 +2170,21 @@ namespace olc::utils::geom2d
 			return {};	// Intersection, but behind a rays origin, or outside line segment bounds.
 						// so not really an intersection in context
 	}
+
+	// collision(q,l)
+	// optionally returns collision point and collision normal of ray and a line segment, if it collides
+	template<typename T1, typename T2>
+	inline std::optional<std::pair<olc::v_2d<T2>, olc::v_2d<T2>>> collision(const ray<T1>& q, const line<T2>& l)
+	{
+		const auto vIntersection = intersects(q, l);
+		if (vIntersection.size() > 0)
+		{
+			return { vIntersection[0], l.vector() * l.side(q.origin) };
+		}
+		
+		return std::nullopt;
+	}
+
 
 	// intersects(q,c)
 	// Get intersection points where a ray intersects a circle

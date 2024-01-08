@@ -1,7 +1,7 @@
 # olcUTIL_Geometry2D
-A rare public repo for getting this utility file across the finish line
+A stand-alone single header file that handles many and various 2D geometric interactions.
 
-The olcPixelGameEngine is still a popular way to prototype ideas and create games in C++. To accompany it, I have created a set of "utility" files that encapsulate common functionality found in games and applications.
+**NOTE! The olc::PixelGameEngine is NOT required to use this file, though it works very well with it!**
 
 The Geometry2D (& PGE) utility file defines:
 * Points
@@ -9,18 +9,21 @@ The Geometry2D (& PGE) utility file defines:
 * Circles
 * Rectangles
 * Triangles
+* Rays
 
 I would like this file to provide functions that cover every combination Shape Vs Shape for the following functions:
-
 * [true/false] **contains** (Shape A, Shape B) - Shape B entirely exists with Shape A. Points from Shape B can touch Shape A boundary.
 * [true/false] **overlaps** (Shape A, Shape B) - Some part or Shape A and some part of Shape B occupy the same 2D space.
 * [vector<points>] **intersects** (Shape A, Shape B) - Return all points (or none) where the boundaries of Shape A and Shape B overlap.
+* [optional<point>] **project** (Shape A, Shape B, Ray) - Project Shape A along Ray until it is in contact with Shape B (or not).
+* [optional<normal, double>] **collide** (Shape A, Shape B, Ray) - Check if Shape A, when moved along Ray, collides with Shape B. If it does, return the distance along the ray and the normal of Shape B at the point of collision.
+* [optional<ray>] **reflect** (Ray A, Shape B) - Return a ray (if possible) that is a reflection of incident Ray A, when reflected off Shape B.
+* [point] **closest** (Shape A, Shape B) - Return a point on Shape A, which is closest to any part of Shape B.
+* [point] **constrain** (Shape A, Point B) - Return a point within Shape A closest to Point B.
 * [circle] **envelope_c** (Shape A) - Return a minimum size circle shape that fully encapsulates Shape A
 * [rect] **envelope_r** (Shape A) - Return a minimum size rectangle shape that fully encapsulates Shape A
 
-  In total there are 25 potential **contains**, 25 potential **overlaps**, 25 potential **intersects** and 10 potential **envelopes**, which need some maths to think about and some C++ expertise to implement efficiently. In short, it's a lot of work! There are many already implemented, but I've left a "TODO" where I think there is something missing. I know many of the community have code snippets buried away somewhere that satisfy some of these functions.
-
-  All contributors will becredited in the header file, and this will be a fantastic resource/reference for those that might need a function or two for their other projects!
+This project is a collaborative effort, and a continuous "Work-In-Progress" - If you feel you can contribute then please do so! There are many functions required, and we've not yet implemented all of them. Check the header file for the completion matrix. All contributors will becredited in the header file, and this will be a fantastic resource/reference for those that might need a function or two for their other projects!
 
   **So, please, help me!**
 

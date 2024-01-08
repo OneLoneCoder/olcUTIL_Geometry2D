@@ -12,6 +12,19 @@
 
 using namespace olc::utils::geom2d;
 
+// INSTRUCTIONS
+// ~~~~~~~~~~~~
+//
+// A convoluted test file to make sure all the tests do what we think they do.
+// Drag shapes with left mouse button
+// Active Shape = GREEN
+// Overlapped Shapes = YELLOW
+// Contained Shapes = MAGENTA
+// Intersection Points = RED
+//
+// Cast Rays with right mouse button (like lasers pew pew)
+// Ray - DASHED CYAN
+
 // Still not sure why the STL doesn't have this...
 template<class... Ts>
 struct overloads : Ts... { using Ts::operator()...; };
@@ -25,46 +38,63 @@ public:
 		sAppName = "Testing Geometry2D Utilities";
 	}
 
+	// So what's going on here? Why are we redefining these base types? Are they not included in the header?
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//
+	// Yes they are, and they can be used as expected. The challenge starts if you want to have a container filled
+	// with different shapes. The shapes do not share a common base class. The utility library is not really intended
+	// to be used this way - instead it's expected the user keep track of which shapes are interacting with which and
+	// call the appropriate function. This "kinda" happens automatically at compile time as all the functions have 
+	// exhaustive overrides to allow all the permutations of test.
+	//
+	// However for this test application I wanted a whole bunch of shapes the user can interact with. 'starfreakclone'
+	// reworked my explicit (and lengthy) functions of comparisons and tests into some clever template-fu as seen here.
+	//
+	// "NOTE!! NEED A TEMPLATE GURU - IM SURE THIS MESS CAN BE TIDIED UP" - javidx9
+	// "Never fear! We are here!" - starfreakclone, fux & eight&&
+
 	struct Point
 	{
-		olc::vf2d points[1];
+		olc::vf2d points[1]; // the point
 	};
 
 	struct Line
 	{
-		olc::vf2d points[2];
+		olc::vf2d points[2]; // start, end
 	};
 
 	struct Rect
 	{
-		olc::vf2d points[2];
+		olc::vf2d points[2]; // pos top left, pos bottom right
 	};
 
 	struct Circle
 	{
-		olc::vf2d points[2];
+		olc::vf2d points[2]; // center pos, pos on circumference
 	};
 
 	struct Triangle
 	{
-		olc::vf2d points[3];
+		olc::vf2d points[3]; // the three points
 	};
 
 	struct Ray
 	{
-		olc::vf2d points[2];
+		olc::vf2d points[2]; // origin, direction
 	};
 
-	static auto make_internal(const Point& p) { return p.points[0]; }
-	static auto make_internal(const Line& p)  { return line<float>{ p.points[0], p.points[1] }; }
-	static auto make_internal(const Rect& p) { return rect<float>{ p.points[0], (p.points[1] - p.points[0]) }; }
-	static auto make_internal(const Circle& p) { return circle<float>{ p.points[0], (p.points[1]-p.points[0]).mag() }; }
+	// Create desired shapes using a sequence of points
+	static auto make_internal(const Point& p)    { return p.points[0]; }
+	static auto make_internal(const Line& p)     { return line<float>{ p.points[0], p.points[1] }; }
+	static auto make_internal(const Rect& p)     { return rect<float>{ p.points[0], (p.points[1] - p.points[0]) }; }
+	static auto make_internal(const Circle& p)   { return circle<float>{ p.points[0], (p.points[1]-p.points[0]).mag() }; }
 	static auto make_internal(const Triangle& p) { return triangle<float>{ p.points[0], p.points[1], p.points[2] }; }
-	static auto make_internal(const Ray& p) { return ray<float>{ p.points[0], (p.points[1]-p.points[0]).norm() }; }
+	static auto make_internal(const Ray& p)      { return ray<float>{ p.points[0], (p.points[1]-p.points[0]).norm() }; }
 
+	// The clever bit (and a bit new to me - jx9)
 	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray>;
 
-	// NOTE!! NEED A TEMPLATE GURU - IM SURE THIS MESS CAN BE TIDIED UP
+	
 
 	bool CheckOverlaps(const ShapeWrap& s1, const ShapeWrap& s2)
 	{
@@ -73,6 +103,8 @@ public:
 			{
 				return overlaps(make_internal(lhs), make_internal(rhs));
 			},
+
+			// Any combination of 'Ray' does not work because 'overlaps' is not implemented for it.
 			[](const Ray&, const auto&) { return false; },
 			[](const auto&, const Ray&) { return false; },
 			[](const Ray&, const Ray&)  { return false; }
@@ -104,10 +136,18 @@ public:
 			{
 				return intersects(make_internal(lhs), make_internal(rhs));
 			},
+
 			// Any combination of 'Ray' does not work because 'intersects' is not implemented for it.
-			[](const Ray&, const auto&) { return std::vector<olc::vf2d>{}; },
+			//[](const Ray&, const auto&) { return std::vector<olc::vf2d>{}; }, - Ray Intersections are implemented - tut tut :P
+
+			// Ray vs Ray - needed explicitly because...
+			[](const Ray& lhs, const Ray& rhs)  
+			{ 
+				return intersects(make_internal(lhs), make_internal(rhs)); 
+			},
+
+			// ...Shape vs Ray - Dont exist but this treats all f(x,ray) as invalid
 			[](const auto&, const Ray&) { return std::vector<olc::vf2d>{}; },
-			[](const Ray&, const Ray&)  { return std::vector<olc::vf2d>{}; }
 		};
 
 		return std::visit(dispatch, s1, s2);

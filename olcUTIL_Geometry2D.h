@@ -53,8 +53,8 @@
 	
 	With significant contributions from:
 	
-	Piratux, Gusgo99, Gorbit99, MagetzUb, Dandistine
-	cstdint, sigonasr, bixxy, Qwerasd
+	Piratux, Gusgo99, Gorbit99, MaGetzUb, Dandistine, Moros1138
+	cstdint, sigonasr, bixxy, Qwerasd, starfreakclone, fux
 
 	Changes:
 	v1.01:		+Made constants inline

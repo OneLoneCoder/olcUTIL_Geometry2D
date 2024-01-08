@@ -7,9 +7,14 @@
 #define OLC_PGEX_QUICKGUI
 #include "third_party/olcPGEX_QuickGUI.h"
 
+#include <variant>
+
 
 using namespace olc::utils::geom2d;
 
+// Still not sure why the STL doesn't have this...
+template<class... Ts>
+struct overloads : Ts... { using Ts::operator()...; };
 
 class Test_Geometry2D : public olc::PixelGameEngine
 {
@@ -20,348 +25,136 @@ public:
 		sAppName = "Testing Geometry2D Utilities";
 	}
 
-	enum class Shapes
+	struct Point
 	{
-		Point,
-		Line,
-		Rect,
-		Circle,
-		Triangle,
-		Ray,
+		olc::vf2d points[1];
 	};
 
-	struct ShapeWrap
+	struct Line
 	{
-		Shapes type = Shapes::Point;
-		std::vector<olc::vf2d> points;
+		olc::vf2d points[2];
 	};
 
-	auto MakePoint(const std::vector<olc::vf2d>& p) { return p[0]; }
-	auto MakeLine(const std::vector<olc::vf2d>& p)  { return line<float>{ p[0], p[1] }; }
-	auto MakeRect(const std::vector<olc::vf2d>& p) { return rect<float>{ p[0], (p[1] - p[0]) }; }
-	auto MakeCircle(const std::vector<olc::vf2d>& p) { return circle<float>{ p[0], (p[1]-p[0]).mag() }; }
-	auto MakeTriangle(const std::vector<olc::vf2d>& p) { return triangle<float>{ p[0], p[1], p[2] }; }
-	auto MakeRay(const std::vector<olc::vf2d>& p) { return ray<float>{ p[0], (p[1]-p[0]).norm() }; }
+	struct Rect
+	{
+		olc::vf2d points[2];
+	};
+
+	struct Circle
+	{
+		olc::vf2d points[2];
+	};
+
+	struct Triangle
+	{
+		olc::vf2d points[3];
+	};
+
+	struct Ray
+	{
+		olc::vf2d points[2];
+	};
+
+	static auto make_internal(const Point& p) { return p.points[0]; }
+	static auto make_internal(const Line& p)  { return line<float>{ p.points[0], p.points[1] }; }
+	static auto make_internal(const Rect& p) { return rect<float>{ p.points[0], (p.points[1] - p.points[0]) }; }
+	static auto make_internal(const Circle& p) { return circle<float>{ p.points[0], (p.points[1]-p.points[0]).mag() }; }
+	static auto make_internal(const Triangle& p) { return triangle<float>{ p.points[0], p.points[1], p.points[2] }; }
+	static auto make_internal(const Ray& p) { return ray<float>{ p.points[0], (p.points[1]-p.points[0]).norm() }; }
+
+	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray>;
 
 	// NOTE!! NEED A TEMPLATE GURU - IM SURE THIS MESS CAN BE TIDIED UP
 
 	bool CheckOverlaps(const ShapeWrap& s1, const ShapeWrap& s2)
 	{
-		if (s1.type == Shapes::Point)
-		{
-			switch (s2.type)
+		const auto dispatch = overloads{
+			[](const auto& lhs, const auto& rhs)
 			{
-			case Shapes::Point: 
-				return overlaps(MakePoint(s1.points), MakePoint(s2.points));
-			case Shapes::Line: 
-				return overlaps(MakePoint(s1.points), MakeLine(s2.points));
-			case Shapes::Rect: 
-				return overlaps(MakePoint(s1.points), MakeRect(s2.points));
-			case Shapes::Circle: 
-				return overlaps(MakePoint(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle: 
-				return overlaps(MakePoint(s1.points), MakeTriangle(s2.points));
-			}
-		}
+				return overlaps(make_internal(lhs), make_internal(rhs));
+			},
+			[](const Ray&, const auto&) { return false; },
+			[](const auto&, const Ray&) { return false; },
+			[](const Ray&, const Ray&)  { return false; }
+		};
 
-		if (s1.type == Shapes::Line)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return overlaps(MakeLine(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return overlaps(MakeLine(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return overlaps(MakeLine(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return overlaps(MakeLine(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return overlaps(MakeLine(s1.points), MakeTriangle(s2.points));
-			}
-		}
-
-		if (s1.type == Shapes::Rect)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return overlaps(MakeRect(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return overlaps(MakeRect(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return overlaps(MakeRect(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return overlaps(MakeRect(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return overlaps(MakeRect(s1.points), MakeTriangle(s2.points));
-			}
-		}
-
-		if (s1.type == Shapes::Circle)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return overlaps(MakeCircle(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return overlaps(MakeCircle(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return overlaps(MakeCircle(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return overlaps(MakeCircle(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return overlaps(MakeCircle(s1.points), MakeTriangle(s2.points));
-			}
-		}
-
-		if (s1.type == Shapes::Triangle)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return overlaps(MakeTriangle(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return overlaps(MakeTriangle(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return overlaps(MakeTriangle(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return overlaps(MakeTriangle(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return overlaps(MakeTriangle(s1.points), MakeTriangle(s2.points));
-			}
-		}
-
-		return false;
+		return std::visit(dispatch, s1, s2);
 	}
 
 	bool CheckContains(const ShapeWrap& s1, const ShapeWrap& s2)
 	{
-		if (s1.type == Shapes::Point)
-		{
-			switch (s2.type)
+		const auto dispatch = overloads{
+			[](const auto& lhs, const auto& rhs)
 			{
-			case Shapes::Point:
-				return contains(MakePoint(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return contains(MakePoint(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return contains(MakePoint(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return contains(MakePoint(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return contains(MakePoint(s1.points), MakeTriangle(s2.points));
-			}
-		}
+				return contains(make_internal(lhs), make_internal(rhs));
+			},
+			// Any combination of 'Ray' does not work because 'contains' is not implemented for it.
+			[](const Ray&, const auto&) { return false; },
+			[](const auto&, const Ray&) { return false; },
+			[](const Ray&, const Ray&)  { return false; }
+		};
 
-		if (s1.type == Shapes::Line)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return contains(MakeLine(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return contains(MakeLine(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return contains(MakeLine(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return contains(MakeLine(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return contains(MakeLine(s1.points), MakeTriangle(s2.points));
-			}
-		}
-
-		if (s1.type == Shapes::Rect)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return contains(MakeRect(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return contains(MakeRect(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return contains(MakeRect(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return contains(MakeRect(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return contains(MakeRect(s1.points), MakeTriangle(s2.points));
-			}
-		}
-
-		if (s1.type == Shapes::Circle)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return contains(MakeCircle(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return contains(MakeCircle(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return contains(MakeCircle(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return contains(MakeCircle(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return contains(MakeCircle(s1.points), MakeTriangle(s2.points));
-			}
-		}
-
-		if (s1.type == Shapes::Triangle)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return contains(MakeTriangle(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return contains(MakeTriangle(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return contains(MakeTriangle(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return contains(MakeTriangle(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return contains(MakeTriangle(s1.points), MakeTriangle(s2.points));
-			}
-		}
-
-		return false;
+		return std::visit(dispatch, s1, s2);
 	}
 
 	std::vector<olc::vf2d> CheckIntersects(const ShapeWrap& s1, const ShapeWrap& s2)
 	{
-		if (s1.type == Shapes::Point)
-		{
-			switch (s2.type)
+		const auto dispatch = overloads{
+			[](const auto& lhs, const auto& rhs)
 			{
-			case Shapes::Point:
-				return intersects(MakePoint(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return intersects(MakePoint(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return intersects(MakePoint(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return intersects(MakePoint(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return intersects(MakePoint(s1.points), MakeTriangle(s2.points));
-			}
-		}
+				return intersects(make_internal(lhs), make_internal(rhs));
+			},
+			// Any combination of 'Ray' does not work because 'intersects' is not implemented for it.
+			[](const Ray&, const auto&) { return std::vector<olc::vf2d>{}; },
+			[](const auto&, const Ray&) { return std::vector<olc::vf2d>{}; },
+			[](const Ray&, const Ray&)  { return std::vector<olc::vf2d>{}; }
+		};
 
-		if (s1.type == Shapes::Line)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return intersects(MakeLine(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return intersects(MakeLine(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return intersects(MakeLine(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return intersects(MakeLine(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return intersects(MakeLine(s1.points), MakeTriangle(s2.points));
-			}
-		}
+		return std::visit(dispatch, s1, s2);
+	}
 
-		if (s1.type == Shapes::Rect)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return intersects(MakeRect(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return intersects(MakeRect(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return intersects(MakeRect(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return intersects(MakeRect(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return intersects(MakeRect(s1.points), MakeTriangle(s2.points));
-			}
-		}
+	void draw_internal(const Point& x, const olc::Pixel col)
+	{
+		const auto p = make_internal(x);
+		Draw(p, col);
+	}
 
-		if (s1.type == Shapes::Circle)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return intersects(MakeCircle(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return intersects(MakeCircle(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return intersects(MakeCircle(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return intersects(MakeCircle(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return intersects(MakeCircle(s1.points), MakeTriangle(s2.points));
-			}
-		}
+	void draw_internal(const Line& x, const olc::Pixel col)
+	{
+		const auto l = make_internal(x);
+		DrawLine(l.start, l.end, col);
+	}
 
-		if (s1.type == Shapes::Triangle)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return intersects(MakeTriangle(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return intersects(MakeTriangle(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return intersects(MakeTriangle(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return intersects(MakeTriangle(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return intersects(MakeTriangle(s1.points), MakeTriangle(s2.points));
-			}
-		}
+	void draw_internal(const Rect& x, const olc::Pixel col)
+	{
+		const auto r = make_internal(x);
+		DrawRect(r.pos, r.size, col);
+	}
 
-		if (s1.type == Shapes::Ray)
-		{
-			switch (s2.type)
-			{
-			case Shapes::Point:
-				return intersects(MakeRay(s1.points), MakePoint(s2.points));
-			case Shapes::Line:
-				return intersects(MakeRay(s1.points), MakeLine(s2.points));
-			case Shapes::Rect:
-				return intersects(MakeRay(s1.points), MakeRect(s2.points));
-			case Shapes::Circle:
-				return intersects(MakeRay(s1.points), MakeCircle(s2.points));
-			case Shapes::Triangle:
-				return intersects(MakeRay(s1.points), MakeTriangle(s2.points));
-			}
-		}
+	void draw_internal(const Circle& x, const olc::Pixel col)
+	{
+		const auto c = make_internal(x);
+		DrawCircle(c.pos, int32_t(c.radius), col);
+	}
 
-	
-		return {};
+	void draw_internal(const Triangle& x, const olc::Pixel col)
+	{
+		const auto t = make_internal(x);
+		DrawTriangle(t.pos[0], t.pos[1], t.pos[2], col);
+	}
+
+	void draw_internal(const Ray& x, const olc::Pixel col)
+	{
+		const auto t = make_internal(x);
+		DrawLine(t.origin, t.origin+t.direction * 1000.0f, col, 0xF0F0F0F0);
 	}
 
 	void DrawShape(const ShapeWrap& shape, const olc::Pixel col = olc::WHITE)
 	{
-		switch (shape.type)
+		std::visit([&](const auto& x)
 		{
-		case Shapes::Point: {
-			const auto p = MakePoint(shape.points);
-			Draw(p, col);
-			break; }
-		case Shapes::Line: {
-			const auto l = MakeLine(shape.points);
-			DrawLine(l.start, l.end, col);
-			break; }
-		case Shapes::Rect: {
-			const auto r = MakeRect(shape.points);
-			DrawRect(r.pos, r.size, col);
-			break; }
-		case Shapes::Circle: {
-			const auto c = MakeCircle(shape.points);
-			DrawCircle(c.pos, int32_t(c.radius), col);
-			break; }
-		case Shapes::Triangle: {
-			const auto t = MakeTriangle(shape.points);
-			DrawTriangle(t.pos[0], t.pos[1], t.pos[2], col);
-			break; }
-		case Shapes::Ray: {
-			const auto t = MakeRay(shape.points);
-			DrawLine(t.origin, t.origin+t.direction * 1000.0f, col, 0xF0F0F0F0);
-			break; }
-		}
+			draw_internal(x, col);
+		}, shape);
 	}
 
 	std::vector<ShapeWrap> vecShapes;
@@ -372,16 +165,16 @@ public:
 public: 
 	bool OnUserCreate() override
 	{
-		vecShapes.push_back({ Shapes::Point, { { 250.0f, 10.0f } } });
-		vecShapes.push_back({ Shapes::Line, { { 20.0f, 10.0f }, {50.0f, 70.0f} } });
-		vecShapes.push_back({ Shapes::Rect, { { 80.0f, 10.0f }, {110.0f, 60.0f} } });
-		vecShapes.push_back({ Shapes::Circle, { { 130.0f, 20.0f }, {170.0f, 20.0f} } });
+		vecShapes.push_back({ Point{ { { 250.0f, 10.0f } } } });
+		vecShapes.push_back({ Line{ { { 20.0f, 10.0f }, {50.0f, 70.0f} } } });
+		vecShapes.push_back({ Rect{ { { 80.0f, 10.0f }, {110.0f, 60.0f} } } });
+		vecShapes.push_back({ Circle{ { { 130.0f, 20.0f }, {170.0f, 20.0f} } } });
 
-		vecShapes.push_back({ Shapes::Circle, { { 330.0f, 300.0f }, {420.0f, 300.0f} } });
-		vecShapes.push_back({ Shapes::Circle, { { 330.0f, 300.0f }, {400.0f, 300.0f} } });
+		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {420.0f, 300.0f} } } });
+		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {400.0f, 300.0f} } } });
 
-		vecShapes.push_back({ Shapes::Triangle, {{50.0f, 100.0f}, {10.0f, 150.0f}, {90.0f, 150.0f}} });
-		vecShapes.push_back({ Shapes::Triangle, {{350.0f, 200.0f}, {500.0f, 150.0f}, {450.0f, 400.0f}} });
+		vecShapes.push_back({ Triangle{{ {50.0f, 100.0f}, {10.0f, 150.0f}, {90.0f, 150.0f}} }});
+		vecShapes.push_back({ Triangle{{ {350.0f, 200.0f}, {500.0f, 150.0f}, {450.0f, 400.0f}} }});
 
 		return true;
 	}
@@ -397,15 +190,19 @@ public:
 			nSelectedShapeIndex = -1;
 
 		// Check for mouse hovered shapes
-		ShapeWrap mouse{ Shapes::Point, {olc::vf2d(GetMousePos())} };
+		ShapeWrap mouse{ Point{olc::vf2d(GetMousePos())} };
 
 
 		if (nSelectedShapeIndex < vecShapes.size() && GetMouse(0).bHeld)
 		{
-			for (auto& p : vecShapes[nSelectedShapeIndex].points)
+			// Visit the selected shape and offset.
+			std::visit([&](auto& shape)
 			{
-				p += vMouseDelta;
-			}
+				for (auto& p : shape.points)
+				{
+					p += vMouseDelta;
+				}
+			}, vecShapes[nSelectedShapeIndex]);
 		}
 
 		size_t nMouseIndex = 0;
@@ -456,8 +253,8 @@ public:
 			// Enable Ray Mode
 			bRayMode = true;
 
-			ray1 = { Shapes::Ray, {{ 10.0f, 10.0f }, olc::vf2d(GetMousePos())} }; 
-			ray2 = { Shapes::Ray, {{ float(ScreenWidth() - 10), 10.0f }, olc::vf2d(GetMousePos())} };
+			ray1 = { Ray{{ { 10.0f, 10.0f }, olc::vf2d(GetMousePos())} }}; 
+			ray2 = { Ray{{ { float(ScreenWidth() - 10), 10.0f }, olc::vf2d(GetMousePos())} }};
 
 			
 			for (size_t i = 0; i < vecShapes.size(); i++)
@@ -471,7 +268,7 @@ public:
 				vIntersections.insert(vIntersections.end(), vPoints2.begin(), vPoints2.end());
 			}
 
-			const auto vPoints3 = intersects(MakeRay(ray2.points), MakeRay(ray1.points));
+			const auto vPoints3 = CheckIntersects(ray2, ray1);
 			vIntersections.insert(vIntersections.end(), vPoints3.begin(), vPoints3.end());
 			
 

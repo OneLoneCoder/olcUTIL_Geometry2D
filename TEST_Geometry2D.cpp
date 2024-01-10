@@ -153,6 +153,18 @@ public:
 		return std::visit(dispatch, s1, s2);
 	}
 
+	std::optional<ray<float>> CheckReflect(const olc::utils::geom2d::ray<float>& s1, const ShapeWrap& s2)
+	{
+		const auto dispatch = overloads{
+			[&](const auto& a) -> std::optional<olc::utils::geom2d::ray<float>>
+			{
+				return reflect(s1, make_internal(a));
+			}
+		};
+
+		return std::visit(dispatch, s2);
+	}
+
 	void draw_internal(const Point& x, const olc::Pixel col)
 	{
 		const auto p = make_internal(x);
@@ -206,10 +218,13 @@ public:
 	bool OnUserCreate() override
 	{
 		vecShapes.push_back({ Point{ { { 250.0f, 10.0f } } } });
-		vecShapes.push_back({ Line{ { { 20.0f, 10.0f }, {50.0f, 70.0f} } } });
-		vecShapes.push_back({ Rect{ { { 80.0f, 10.0f }, {110.0f, 60.0f} } } });
-		vecShapes.push_back({ Circle{ { { 130.0f, 20.0f }, {170.0f, 20.0f} } } });
 
+		vecShapes.push_back({ Line{ { { 20.0f, 10.0f }, {50.0f, 70.0f} } } });
+		vecShapes.push_back({ Line{ { { 80.0f, 10.0f }, {10.0f, 20.0f} } } });
+
+		vecShapes.push_back({ Rect{ { { 80.0f, 10.0f }, {110.0f, 60.0f} } } });
+
+		vecShapes.push_back({ Circle{ { { 130.0f, 20.0f }, {170.0f, 20.0f} } } });
 		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {420.0f, 300.0f} } } });
 		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {400.0f, 300.0f} } } });
 
@@ -306,6 +321,7 @@ public:
 
 				const auto vPoints2 = CheckIntersects(ray2, vTargetShape);
 				vIntersections.insert(vIntersections.end(), vPoints2.begin(), vPoints2.end());
+
 			}
 
 			const auto vPoints3 = CheckIntersects(ray2, ray1);
@@ -340,6 +356,59 @@ public:
 			DrawShape(ray1, olc::CYAN); 
 			DrawShape(ray2, olc::CYAN);
 		}
+
+		// Laser beam		
+		ray<float> ray_laser{ {10.0f, 300.0f}, {1.0f, 0.0f} };
+		bool ray_stop = false;
+		int nBounces = 100;
+		size_t last_hit_index = -1;
+		
+		
+		ray<float> ray_reflected;
+
+		while (!ray_stop && nBounces > 0)
+		{
+			// Find closest
+			ray_stop = true;
+			size_t closest_hit_index = -1;
+			float fClosestDistance = 10000000.0f;
+
+			for (size_t i = 0; i < vecShapes.size(); i++)
+			{
+				// Dont check against origin shape
+				if (i == last_hit_index) continue;
+
+				const auto& vTargetShape = vecShapes[i];
+				auto hit = CheckReflect(ray_laser, vTargetShape);
+				if (hit.has_value())
+				{
+					float d = (ray_laser.origin - hit.value().origin).mag();
+					if (d < fClosestDistance)
+					{
+						fClosestDistance = d;
+						closest_hit_index = i;
+						ray_reflected = hit.value();
+					}					
+				}
+			}
+
+			if (closest_hit_index != -1)
+			{				
+				DrawLine(ray_laser.origin, ray_reflected.origin, olc::Pixel(rand() % 155 + 100, 0, 0));
+				ray_laser = ray_reflected;
+				ray_stop = false;
+				last_hit_index = closest_hit_index;
+				nBounces--;
+			}
+
+			if (ray_stop)
+			{
+				// Ray didnt hit anything
+				nBounces = 0;
+				DrawLine(ray_laser.origin, ray_laser.origin + ray_laser.direction * 1000.0f, olc::Pixel(rand() % 155 + 100, 0, 0));
+			}
+		}
+		
 
 		return true;
 	}

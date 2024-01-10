@@ -111,6 +111,9 @@
 
 		ray reflect(ray, a)
 			Returns a ray that is a reflection of supplied incident ray against Shape A
+
+		optional<point, normal> collision(ray, a)
+			Returns the point and normal where a ray collides with Shape A
 	
 */
 
@@ -124,7 +127,7 @@
 
 	where:
 
-	f = overlaps, intersects, contains, closest, envelope_r, envelope_b
+	f = overlaps, intersects, contains, closest, envelope_r, envelope_b, reflects, collision
 	a = p, l, r, c, t, q, pol (point, line, rect, circ, triangle, ray, polygon)
 
 	example:
@@ -171,10 +174,12 @@
     ---------+--------------+--------------+--------------+--------------+--------------+--------------+
     RAY      |              |              |              |              |              |              |
              |              |              |              |              |              |              |
-             |              |              |              |              |              |              |
+             |              | collision    | collision    | collision    | collision    | collision*   |
              |              | intersects   | intersects   | intersects   | intersects   | intersects   |
-             |              |              |              |              |              |              |
+             |              | reflect      | reflect      | reflect      | reflect      | reflect*     |
     ---------+--------------+--------------+--------------+--------------+--------------+--------------+
+
+	* Exists but always fails
 */
 
 #pragma once
@@ -325,6 +330,12 @@ namespace olc
 		inline constexpr std::string str() const
 		{
 			return std::string("(") + std::to_string(this->x) + "," + std::to_string(this->y) + ")";
+		}
+
+		// Assuming this vector is incident, given a normal, return the reflection
+		inline constexpr v_2d reflect(const v_2d& n) const
+		{
+			return (*this) - 2.0 * (this->dot(n) * n);
 		}
 
 		// Allow 'casting' from other v_2d types
@@ -2193,9 +2204,165 @@ namespace olc::utils::geom2d
 		const auto vIntersection = intersects(q, l);
 		if (vIntersection.size() > 0)
 		{
-			return { vIntersection[0], l.vector() * l.side(q.origin) };
+			return { {vIntersection[0], l.vector().perp().norm() * l.side(q.origin)} };
 		}
 		
+		return std::nullopt;
+	}
+
+	// reflect(q,l)
+	// optionally returns a ray reflected off a line segement if collision occurs
+	template<typename T1, typename T2>
+	inline std::optional<ray<T1>> reflect(const ray<T1>& q, const line<T2>& l)
+	{
+		const auto vCollision = collision(q, l);
+		if (vCollision.has_value())
+		{
+			return { ray<T1>{vCollision.value().first, q.direction.reflect(vCollision.value().second)} };
+		}
+
+		return std::nullopt;
+	}
+
+	// reflect(q,p)
+	// optionally returns a ray reflected off a point if collision occurs
+	template<typename T1, typename T2>
+	inline std::optional<ray<T1>> reflect(const ray<T1>& q, const olc::v_2d<T2>& p)
+	{
+		// TODO:
+		return std::nullopt;
+	}
+
+	// collision(q,r)
+	// optionally returns collision point and collision normal of ray and a line segment, if it collides
+	template<typename T1, typename T2>
+	inline std::optional<std::pair<olc::v_2d<T1>, olc::v_2d<T1>>> collision(const ray<T1>& q, const rect<T2>& r)
+	{
+		olc::v_2d<T1> vClosestIntersection;
+		olc::v_2d<T1> vIntersectionNormal;
+		double dClosestDistance2 = std::numeric_limits<double>::max();
+		bool bCollide = false;
+
+		for (size_t i = 0; i < r.side_count(); i++)
+		{
+			auto v = intersects(q, r.side(i));
+			if (v.size() > 0)
+			{
+				bCollide = true;
+				double d = (v[0] - q.origin).mag2();
+				if (d < dClosestDistance2)
+				{
+					dClosestDistance2 = d;
+					vClosestIntersection = v[0];
+					vIntersectionNormal = r.side(i).vector().perp().norm();
+				}
+			}
+		}
+
+		if (bCollide)
+		{
+			return { {vClosestIntersection, vIntersectionNormal} };
+		}
+
+		return std::nullopt;
+	}
+
+	// reflect(q,r)
+	// optionally returns a ray reflected off a rectangle if collision occurs
+	template<typename T1, typename T2>
+	inline std::optional<ray<T1>> reflect(const ray<T1>& q, const rect<T2>& r)
+	{
+		const auto vCollision = collision(q, r);
+		if (vCollision.has_value())
+		{
+			return { ray<T1>{vCollision.value().first, q.direction.reflect(vCollision.value().second)} };
+		}
+
+		return std::nullopt;
+	}
+
+	// collision(q,c)
+	// optionally returns collision point and collision normal of ray and a circle, if it collides
+	template<typename T1, typename T2>
+	inline std::optional<std::pair<olc::v_2d<T2>, olc::v_2d<T2>>> collision(const ray<T1>& q, const circle<T2>& c)
+	{
+		const auto vIntersection = intersects(q, c);
+		if (vIntersection.size() > 0)
+		{
+			return { {vIntersection[0], (vIntersection[0] - c.pos).norm()}};
+		}
+
+		return std::nullopt;
+	}
+
+	// reflect(q,c)
+	// optionally returns a ray reflected off a circle if collision occurs
+	template<typename T1, typename T2>
+	inline std::optional<ray<T1>> reflect(const ray<T1>& q, const circle<T2>& c)
+	{
+		const auto vCollision = collision(q, c);
+		if (vCollision.has_value())
+		{
+			return { ray<T1>{vCollision.value().first, q.direction.reflect(vCollision.value().second)} };
+		}
+
+		return std::nullopt;
+	}
+
+	// collision(q,r)
+	// optionally returns collision point and collision normal of ray and a triangle, if it collides
+	template<typename T1, typename T2>
+	inline std::optional<std::pair<olc::v_2d<T1>, olc::v_2d<T1>>> collision(const ray<T1>& q, const triangle<T2>& t)
+	{
+		olc::v_2d<T1> vClosestIntersection;
+		olc::v_2d<T1> vIntersectionNormal;
+		double dClosestDistance2 = std::numeric_limits<double>::max();
+		bool bCollide = false;
+
+		for (size_t i = 0; i < t.side_count(); i++)
+		{
+			auto v = intersects(q, t.side(i));
+			if (v.size() > 0)
+			{
+				bCollide = true;
+				double d = (v[0] - q.origin).mag2();
+				if (d < dClosestDistance2)
+				{
+					dClosestDistance2 = d;
+					vClosestIntersection = v[0];
+					vIntersectionNormal = t.side(i).vector().perp().norm();
+				}
+			}
+		}
+
+		if (bCollide)
+		{
+			return { {vClosestIntersection, vIntersectionNormal} };
+		}
+
+		return std::nullopt;
+	}
+
+	// reflect(q,t)
+	// optionally returns a ray reflected off a triangle if collision occurs
+	template<typename T1, typename T2>
+	inline std::optional<ray<T1>> reflect(const ray<T1>& q, const triangle<T2>& t)
+	{
+		const auto vCollision = collision(q, t);
+		if (vCollision.has_value())
+		{
+			return { ray<T1>{vCollision.value().first, q.direction.reflect(vCollision.value().second)} };
+		}
+
+		return std::nullopt;
+	}
+
+	// reflect(q,r)
+	// can't reflect a ray of a ray
+	template<typename T1, typename T2>
+	inline std::optional<ray<T1>> reflect(const ray<T1>& q1, const ray<T2>& q2)
+	{
+		// Can't reflect!
 		return std::nullopt;
 	}
 

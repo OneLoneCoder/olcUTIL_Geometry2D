@@ -7,9 +7,27 @@
 #define OLC_PGEX_QUICKGUI
 #include "third_party/olcPGEX_QuickGUI.h"
 
+#include <variant>
+
 
 using namespace olc::utils::geom2d;
 
+// INSTRUCTIONS
+// ~~~~~~~~~~~~
+//
+// A convoluted test file to make sure all the tests do what we think they do.
+// Drag shapes with left mouse button
+// Active Shape = GREEN
+// Overlapped Shapes = YELLOW
+// Contained Shapes = MAGENTA
+// Intersection Points = RED
+//
+// Cast Rays with right mouse button (like lasers pew pew)
+// Ray - DASHED CYAN
+
+// Still not sure why the STL doesn't have this...
+template<class... Ts>
+struct overloads : Ts... { using Ts::operator()...; };
 
 class Test_Geometry2D : public olc::PixelGameEngine
 {
@@ -20,566 +38,377 @@ public:
 		sAppName = "Testing Geometry2D Utilities";
 	}
 
-	enum class Shapes
+	// So what's going on here? Why are we redefining these base types? Are they not included in the header?
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	//
+	// Yes they are, and they can be used as expected. The challenge starts if you want to have a container filled
+	// with different shapes. The shapes do not share a common base class. The utility library is not really intended
+	// to be used this way - instead it's expected the user keep track of which shapes are interacting with which and
+	// call the appropriate function. This "kinda" happens automatically at compile time as all the functions have 
+	// exhaustive overrides to allow all the permutations of test.
+	//
+	// However for this test application I wanted a whole bunch of shapes the user can interact with. 'starfreakclone'
+	// reworked my explicit (and lengthy) functions of comparisons and tests into some clever template-fu as seen here.
+	//
+	// "NOTE!! NEED A TEMPLATE GURU - IM SURE THIS MESS CAN BE TIDIED UP" - javidx9
+	// "Never fear! We are here!" - starfreakclone, fux & eight&&
+
+	struct Point
 	{
-		Point,
-		Line,
-		Rect,
-		Circle,
-		Triangle,
+		olc::vf2d points[1]; // the point
 	};
 
-	Shapes nShape1 = Shapes::Point;
-	Shapes nShape2 = Shapes::Point;
+	struct Line
+	{
+		olc::vf2d points[2]; // start, end
+	};
+
+	struct Rect
+	{
+		olc::vf2d points[2]; // pos top left, pos bottom right
+	};
+
+	struct Circle
+	{
+		olc::vf2d points[2]; // center pos, pos on circumference
+	};
+
+	struct Triangle
+	{
+		olc::vf2d points[3]; // the three points
+	};
+
+	struct Ray
+	{
+		olc::vf2d points[2]; // origin, direction
+	};
+
+	// Create desired shapes using a sequence of points
+	static auto make_internal(const Point& p)    { return p.points[0]; }
+	static auto make_internal(const Line& p)     { return line<float>{ p.points[0], p.points[1] }; }
+	static auto make_internal(const Rect& p)     { return rect<float>{ p.points[0], (p.points[1] - p.points[0]) }; }
+	static auto make_internal(const Circle& p)   { return circle<float>{ p.points[0], (p.points[1]-p.points[0]).mag() }; }
+	static auto make_internal(const Triangle& p) { return triangle<float>{ p.points[0], p.points[1], p.points[2] }; }
+	static auto make_internal(const Ray& p)      { return ray<float>{ p.points[0], (p.points[1]-p.points[0]).norm() }; }
+
+	// The clever bit (and a bit new to me - jx9)
+	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray>;
+
 	
-	olc::vf2d   shapePoint1, shapePoint2;
-	rect<float> shapeRect1, shapeRect2;
-	line<float> shapeLine1, shapeLine2;
-	circle<float> shapeCircle1, shapeCircle2;
-	triangle<float> shapeTriangle1, shapeTriangle2;
 
-	olc::QuickGUI::Manager guiManager;
-	olc::QuickGUI::CheckBox* guiShape1[5];
-	olc::QuickGUI::CheckBox* guiShape2[5];
-	olc::QuickGUI::CheckBox* guiEnvelopeShape[2];
+	bool CheckOverlaps(const ShapeWrap& s1, const ShapeWrap& s2)
+	{
+		const auto dispatch = overloads{
+			[](const auto& lhs, const auto& rhs)
+			{
+				return overlaps(make_internal(lhs), make_internal(rhs));
+			},
 
+			// Any combination of 'Ray' does not work because 'overlaps' is not implemented for it.
+			[](const Ray&, const auto&) { return false; },
+			[](const auto&, const Ray&) { return false; },
+			[](const Ray&, const Ray&)  { return false; }
+		};
+
+		return std::visit(dispatch, s1, s2);
+	}
+
+	bool CheckContains(const ShapeWrap& s1, const ShapeWrap& s2)
+	{
+		const auto dispatch = overloads{
+			[](const auto& lhs, const auto& rhs)
+			{
+				return contains(make_internal(lhs), make_internal(rhs));
+			},
+			// Any combination of 'Ray' does not work because 'contains' is not implemented for it.
+			[](const Ray&, const auto&) { return false; },
+			[](const auto&, const Ray&) { return false; },
+			[](const Ray&, const Ray&)  { return false; }
+		};
+
+		return std::visit(dispatch, s1, s2);
+	}
+
+	std::vector<olc::vf2d> CheckIntersects(const ShapeWrap& s1, const ShapeWrap& s2)
+	{
+		const auto dispatch = overloads{
+			[](const auto& lhs, const auto& rhs)
+			{
+				return intersects(make_internal(lhs), make_internal(rhs));
+			},
+
+			// Any combination of 'Ray' does not work because 'intersects' is not implemented for it.
+			//[](const Ray&, const auto&) { return std::vector<olc::vf2d>{}; }, - Ray Intersections are implemented - tut tut :P
+
+			// Ray vs Ray - needed explicitly because...
+			[](const Ray& lhs, const Ray& rhs)  
+			{ 
+				return intersects(make_internal(lhs), make_internal(rhs)); 
+			},
+
+			// ...Shape vs Ray - Dont exist but this treats all f(x,ray) as invalid
+			[](const auto&, const Ray&) { return std::vector<olc::vf2d>{}; },
+		};
+
+		return std::visit(dispatch, s1, s2);
+	}
+
+	std::optional<ray<float>> CheckReflect(const olc::utils::geom2d::ray<float>& s1, const ShapeWrap& s2)
+	{
+		const auto dispatch = overloads{
+			[&](const auto& a) -> std::optional<olc::utils::geom2d::ray<float>>
+			{
+				return reflect(s1, make_internal(a));
+			}
+		};
+
+		return std::visit(dispatch, s2);
+	}
+
+	void draw_internal(const Point& x, const olc::Pixel col)
+	{
+		const auto p = make_internal(x);
+		Draw(p, col);
+	}
+
+	void draw_internal(const Line& x, const olc::Pixel col)
+	{
+		const auto l = make_internal(x);
+		DrawLine(l.start, l.end, col);
+	}
+
+	void draw_internal(const Rect& x, const olc::Pixel col)
+	{
+		const auto r = make_internal(x);
+		DrawRect(r.pos, r.size, col);
+	}
+
+	void draw_internal(const Circle& x, const olc::Pixel col)
+	{
+		const auto c = make_internal(x);
+		DrawCircle(c.pos, int32_t(c.radius), col);
+	}
+
+	void draw_internal(const Triangle& x, const olc::Pixel col)
+	{
+		const auto t = make_internal(x);
+		DrawTriangle(t.pos[0], t.pos[1], t.pos[2], col);
+	}
+
+	void draw_internal(const Ray& x, const olc::Pixel col)
+	{
+		const auto t = make_internal(x);
+		DrawLine(t.origin, t.origin+t.direction * 1000.0f, col, 0xF0F0F0F0);
+	}
+
+	void DrawShape(const ShapeWrap& shape, const olc::Pixel col = olc::WHITE)
+	{
+		std::visit([&](const auto& x)
+		{
+			draw_internal(x, col);
+		}, shape);
+	}
+
+	std::vector<ShapeWrap> vecShapes;
+
+	size_t nSelectedShapeIndex = -1;
+	olc::vi2d vOldMousePos;
 
 public: 
 	bool OnUserCreate() override
 	{
-		// Create GUI
-		guiShape1[0] = new olc::QuickGUI::CheckBox(guiManager, "Point", true, { 10, 2 }, { 80, 16 });
-		guiShape1[1] = new olc::QuickGUI::CheckBox(guiManager, "Line", false, { 100, 2 }, { 80, 16 });
-		guiShape1[2] = new olc::QuickGUI::CheckBox(guiManager, "Rectangle", false, { 190, 2 }, { 80, 16 });
-		guiShape1[3] = new olc::QuickGUI::CheckBox(guiManager, "Circle", false, { 280, 2 }, { 80, 16 });
-		guiShape1[4] = new olc::QuickGUI::CheckBox(guiManager, "Triangle", false, { 370, 2 }, { 80, 16 });
+		vecShapes.push_back({ Point{ { { 250.0f, 10.0f } } } });
 
-		guiShape2[0] = new olc::QuickGUI::CheckBox(guiManager, "Point", true, { 10, 20 }, { 80, 16 });
-		guiShape2[1] = new olc::QuickGUI::CheckBox(guiManager, "Line", false, { 100, 20 }, { 80, 16 });
-		guiShape2[2] = new olc::QuickGUI::CheckBox(guiManager, "Rectangle", false, { 190, 20 }, { 80, 16 });
-		guiShape2[3] = new olc::QuickGUI::CheckBox(guiManager, "Circle", false, { 280, 20 }, { 80, 16 });
-		guiShape2[4] = new olc::QuickGUI::CheckBox(guiManager, "Triangle", false, { 370, 20 }, { 80, 16 });
+		vecShapes.push_back({ Line{ { { 20.0f, 10.0f }, {50.0f, 70.0f} } } });
+		vecShapes.push_back({ Line{ { { 80.0f, 10.0f }, {10.0f, 20.0f} } } });
 
-		guiEnvelopeShape[0] = new olc::QuickGUI::CheckBox(guiManager, "Env Circle", false, { 10, 38 }, { 80, 16 });
-		guiEnvelopeShape[1] = new olc::QuickGUI::CheckBox(guiManager, "Env Rect", false, { 100, 38 }, { 80, 16 });
+		vecShapes.push_back({ Rect{ { { 80.0f, 10.0f }, {110.0f, 60.0f} } } });
 
+		vecShapes.push_back({ Circle{ { { 130.0f, 20.0f }, {170.0f, 20.0f} } } });
+		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {420.0f, 300.0f} } } });
+		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {400.0f, 300.0f} } } });
 
-		shapePoint1 = shapePoint2 = { 270.0f, 240.0f };
-		shapeLine1 = line<float>({ 200.0f, 150.0f }, { 250.0f, 200.0f });
-		shapeLine2 = line<float>({ 200.0f, 150.0f }, { 500.0f, 400.0f });
-		shapeRect1 = rect<float>({ 100.0f, 100.0f }, { 50.0f, 75.0f });
-		shapeRect2 = rect<float>({ 100.0f, 100.0f }, { 100.0f, 200.0f });
-		shapeCircle1 = circle<float>({ 270.0f, 240.0f }, 60.0f);
-		shapeCircle2 = circle<float>({ 270.0f, 240.0f }, 100.0f);
-		shapeTriangle1 = shapeTriangle2 = triangle<float>({ 150.0f, 100.0f }, { 350.0f, 200.0f }, { 75.0f, 300.0f });
+		vecShapes.push_back({ Triangle{{ {50.0f, 100.0f}, {10.0f, 150.0f}, {90.0f, 150.0f}} }});
+		vecShapes.push_back({ Triangle{{ {350.0f, 200.0f}, {500.0f, 150.0f}, {450.0f, 400.0f}} }});
+
 		return true;
 	}
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
-		guiManager.Update(this);
-
-		if (guiShape1[0]->bPressed || GetKey(olc::Key::K1).bPressed)
-		{
-			nShape1 = Shapes::Point;
-			guiShape1[0]->bChecked = true;
-			guiShape1[1]->bChecked = false;
-			guiShape1[2]->bChecked = false;
-			guiShape1[3]->bChecked = false;
-			guiShape1[4]->bChecked = false;
-		}
-
-		if (guiShape1[1]->bPressed || GetKey(olc::Key::K2).bPressed)
-		{
-			nShape1 = Shapes::Line;
-			guiShape1[0]->bChecked = false;
-			guiShape1[1]->bChecked = true;
-			guiShape1[2]->bChecked = false;
-			guiShape1[3]->bChecked = false;
-			guiShape1[4]->bChecked = false;
-		}
-
-		if (guiShape1[2]->bPressed || GetKey(olc::Key::K3).bPressed)
-		{
-			nShape1 = Shapes::Rect;
-			guiShape1[0]->bChecked = false;
-			guiShape1[1]->bChecked = false;
-			guiShape1[2]->bChecked = true;
-			guiShape1[3]->bChecked = false;
-			guiShape1[4]->bChecked = false;
-		}
-
-		if (guiShape1[3]->bPressed || GetKey(olc::Key::K4).bPressed)
-		{
-			nShape1 = Shapes::Circle;
-			guiShape1[0]->bChecked = false;
-			guiShape1[1]->bChecked = false;
-			guiShape1[2]->bChecked = false;
-			guiShape1[3]->bChecked = true;
-			guiShape1[4]->bChecked = false;
-		}
-
-		if (guiShape1[4]->bPressed || GetKey(olc::Key::K5).bPressed)
-		{
-			nShape1 = Shapes::Triangle;
-			guiShape1[0]->bChecked = false;
-			guiShape1[1]->bChecked = false;
-			guiShape1[2]->bChecked = false;
-			guiShape1[3]->bChecked = false;
-			guiShape1[4]->bChecked = true;
-		}
-
-
-
-		if (guiShape2[0]->bPressed || GetKey(olc::Key::K6).bPressed)
-		{
-			nShape2 = Shapes::Point;
-			guiShape2[0]->bChecked = true;
-			guiShape2[1]->bChecked = false;
-			guiShape2[2]->bChecked = false;
-			guiShape2[3]->bChecked = false;
-			guiShape2[4]->bChecked = false;
-		}
-
-		if (guiShape2[1]->bPressed || GetKey(olc::Key::K7).bPressed)
-		{
-			nShape2 = Shapes::Line;
-			guiShape2[0]->bChecked = false;
-			guiShape2[1]->bChecked = true;
-			guiShape2[2]->bChecked = false;
-			guiShape2[3]->bChecked = false;
-			guiShape2[4]->bChecked = false;
-		}
-
-		if (guiShape2[2]->bPressed || GetKey(olc::Key::K8).bPressed)
-		{
-			nShape2 = Shapes::Rect;
-			guiShape2[0]->bChecked = false;
-			guiShape2[1]->bChecked = false;
-			guiShape2[2]->bChecked = true;
-			guiShape2[3]->bChecked = false;
-			guiShape2[4]->bChecked = false;
-		}
-
-		if (guiShape2[3]->bPressed || GetKey(olc::Key::K9).bPressed)
-		{
-			nShape2 = Shapes::Circle;
-			guiShape2[0]->bChecked = false;
-			guiShape2[1]->bChecked = false;
-			guiShape2[2]->bChecked = false;
-			guiShape2[3]->bChecked = true;
-			guiShape2[4]->bChecked = false;
-		}
-
-		if (guiShape2[4]->bPressed || GetKey(olc::Key::K0).bPressed)
-		{
-			nShape2 = Shapes::Triangle;
-			guiShape2[0]->bChecked = false;
-			guiShape2[1]->bChecked = false;
-			guiShape2[2]->bChecked = false;
-			guiShape2[3]->bChecked = false;
-			guiShape2[4]->bChecked = true;
-		}
-
-
-
-		// Move Shape 1 according to mouse position
-		switch (nShape1)
-		{
-		case Shapes::Point:
-		{
-			shapePoint1 = GetMousePos();
-			break;
-		}
-
-		case Shapes::Line:
-		{
-			olc::vf2d v = shapeLine1.vector();
-			shapeLine1.start = GetMousePos();
-			shapeLine1.end = shapeLine1.start + v;
-			break;
-		}
-
-		case Shapes::Rect:
-		{
-			shapeRect1.pos = GetMousePos();
-			break;
-		}
-
-		case Shapes::Circle:
-		{
-			shapeCircle1.pos = GetMousePos();
-			break;
-		}
-
-		case Shapes::Triangle:
-		{
-			olc::vf2d v = GetMousePos() - shapeTriangle1.pos[0];
-			shapeTriangle1.pos[0] += v;
-			shapeTriangle1.pos[1] += v;
-			shapeTriangle1.pos[2] += v;
-			break;
-		}
-
-		}
-
-
-		bool bOverlaps = false;
-		bool bContains = false;
-		std::vector<olc::vf2d> vIntersections;
-		olc::vf2d vClosest;
-
-		// Tests
-		if (nShape1 == Shapes::Point)
-		{
-			if (nShape2 == Shapes::Point)
-			{
-				bOverlaps = overlaps(shapePoint2, shapePoint1);
-				bContains = contains(shapePoint2, shapePoint1);
-				vIntersections = intersects(shapePoint2, shapePoint1);
-				vClosest = closest(shapePoint2, shapePoint1);
-			}
-
-			if (nShape2 == Shapes::Line)
-			{
-				bOverlaps = overlaps(shapeLine2, shapePoint1);
-				bContains = contains(shapeLine2, shapePoint1);
-				vIntersections = intersects(shapeLine2, shapePoint1);
-				vClosest = closest(shapeLine2, shapePoint1);
-			}
-
-			if (nShape2 == Shapes::Rect)
-			{
-				bOverlaps = overlaps(shapeRect2, shapePoint1);
-				bContains = contains(shapeRect2, shapePoint1);
-				vIntersections = intersects(shapeRect2, shapePoint1);
-				vClosest = closest(shapeRect2, shapePoint1);
-			}
-
-			if (nShape2 == Shapes::Circle)
-			{
-				bOverlaps = overlaps(shapeCircle2, shapePoint1);
-				bContains = contains(shapeCircle2, shapePoint1);
-				vIntersections = intersects(shapeCircle2, shapePoint1);
-				vClosest = closest(shapeCircle2, shapePoint1);
-			}
-
-			if (nShape2 == Shapes::Triangle)
-			{
-				bOverlaps = overlaps(shapeTriangle2, shapePoint1);
-				bContains = contains(shapeTriangle2, shapePoint1);
-				vIntersections = intersects(shapeTriangle2, shapePoint1);
-				vClosest = closest(shapeTriangle2, shapePoint1);
-			}
-		}
-
-		if (nShape1 == Shapes::Line)
-		{
-			if (nShape2 == Shapes::Point)
-			{
-				bOverlaps = overlaps(shapePoint2, shapeLine1);
-				bContains = contains(shapePoint2, shapeLine1);
-				vIntersections = intersects(shapePoint2, shapeLine1);
-				vClosest = closest(shapeLine1, shapePoint2);
-			}
-
-			if (nShape2 == Shapes::Line)
-			{
-				bOverlaps = overlaps(shapeLine2, shapeLine1);
-				bContains = contains(shapeLine2, shapeLine1);
-				vIntersections = intersects(shapeLine2, shapeLine1);
-
-			}
-
-			if (nShape2 == Shapes::Rect)
-			{
-				bOverlaps = overlaps(shapeRect2, shapeLine1);
-				bContains = contains(shapeRect2, shapeLine1);
-				vIntersections = intersects(shapeRect2, shapeLine1);
-			}
-
-			if (nShape2 == Shapes::Circle)
-			{
-				bOverlaps = overlaps(shapeCircle2, shapeLine1);
-				bContains = contains(shapeCircle2, shapeLine1);
-				vIntersections = intersects(shapeCircle2, shapeLine1);
-				vClosest = closest(shapeCircle2, shapeLine1);
-			}
-
-			if (nShape2 == Shapes::Triangle)
-			{
-				bOverlaps = overlaps(shapeTriangle2, shapeLine1);
-				bContains = contains(shapeTriangle2, shapeLine1);
-				vIntersections = intersects(shapeTriangle2, shapeLine1);
-			}
-
-			
-		}
-
-		if (nShape1 == Shapes::Rect)
-		{
-			if (nShape2 == Shapes::Point)
-			{
-				bOverlaps = overlaps(shapePoint2, shapeRect1);
-				bContains = contains(shapePoint2, shapeRect1);
-				vIntersections = intersects(shapePoint2, shapeRect1);
-				vClosest = closest(shapeRect1, shapePoint2);
-			}
-
-			if (nShape2 == Shapes::Line)
-			{
-				bOverlaps = overlaps(shapeLine2, shapeRect1);
-				bContains = contains(shapeLine2, shapeRect1);
-				vIntersections = intersects(shapeLine2, shapeRect1);
-			}
-
-			if (nShape2 == Shapes::Rect)
-			{
-				bOverlaps = overlaps(shapeRect2, shapeRect1);
-				bContains = contains(shapeRect2, shapeRect1);
-				vIntersections = intersects(shapeRect2, shapeRect1);
-			}
-
-			if (nShape2 == Shapes::Circle)
-			{
-				bOverlaps = overlaps(shapeCircle2, shapeRect1);
-				bContains = contains(shapeCircle2, shapeRect1);
-				vIntersections = intersects(shapeCircle2, shapeRect1);
-			}
-
-			if (nShape2 == Shapes::Triangle)
-			{
-				bOverlaps = overlaps(shapeTriangle2, shapeRect1);
-				bContains = contains(shapeTriangle2, shapeRect1);
-				vIntersections = intersects(shapeTriangle2, shapeRect1);
-			}
-		}
-
-
-
-
-
-		if (nShape1 == Shapes::Circle)
-		{
-			if (nShape2 == Shapes::Point)
-			{
-				bOverlaps = overlaps(shapePoint2, shapeCircle1);
-				bContains = contains(shapePoint2, shapeCircle1);
-				vIntersections = intersects(shapePoint2, shapeCircle1);
-				vClosest = closest(shapeCircle1, shapePoint2);
-			}
-
-			if (nShape2 == Shapes::Line)
-			{
-				bOverlaps = overlaps(shapeLine2, shapeCircle1);
-				bContains = contains(shapeLine2, shapeCircle1);
-				vIntersections = intersects(shapeLine2, shapeCircle1);
-				vClosest = closest(shapeCircle1, shapeLine2);
-			}
-
-			if (nShape2 == Shapes::Rect)
-			{
-				bOverlaps = overlaps(shapeRect2, shapeCircle1);
-				bContains = contains(shapeRect2, shapeCircle1);
-				vIntersections = intersects(shapeRect2, shapeCircle1);
-			}
-
-			if (nShape2 == Shapes::Circle)
-			{
-				bOverlaps = overlaps(shapeCircle2, shapeCircle1);
-				bContains = contains(shapeCircle2, shapeCircle1);
-				vIntersections = intersects(shapeCircle2, shapeCircle1);
-			}
-
-			if (nShape2 == Shapes::Triangle)
-			{
-				bOverlaps = overlaps(shapeTriangle2, shapeCircle1);
-				bContains = contains(shapeTriangle2, shapeCircle1);
-				vIntersections = intersects(shapeTriangle2, shapeCircle1);
-			}
-		}
-
-
-
-
-		if (nShape1 == Shapes::Triangle)
-		{
-			if (nShape2 == Shapes::Point)
-			{
-				bOverlaps = overlaps(shapePoint2, shapeTriangle1);
-				bContains = contains(shapePoint2, shapeTriangle1);
-				vIntersections = intersects(shapePoint2, shapeTriangle1);
-				vClosest = closest(shapeTriangle1, shapePoint2);
-			}
-
-			if (nShape2 == Shapes::Line)
-			{
-				bOverlaps = overlaps(shapeLine2, shapeTriangle1);
-				bContains = contains(shapeLine2, shapeTriangle1);
-				vIntersections = intersects(shapeLine2, shapeTriangle1);
-			}
-
-			if (nShape2 == Shapes::Rect)
-			{
-				bOverlaps = overlaps(shapeRect2, shapeTriangle1);
-				bContains = contains(shapeRect2, shapeTriangle1);
-				vIntersections = intersects(shapeRect2, shapeTriangle1);
-			}
-
-			if (nShape2 == Shapes::Circle)
-			{
-				bOverlaps = overlaps(shapeCircle2, shapeTriangle1);
-				bContains = contains(shapeCircle2, shapeTriangle1);
-				vIntersections = intersects(shapeCircle2, shapeTriangle1);
-			}
-
-			if (nShape2 == Shapes::Triangle)
-			{
-				bOverlaps = overlaps(shapeTriangle2, shapeTriangle1);
-				bContains = contains(shapeTriangle2, shapeTriangle1);
-				vIntersections = intersects(shapeTriangle2, shapeTriangle1);
-			}
-		}
-
-
-
-
-
-
-
 		Clear(olc::VERY_DARK_BLUE);
 
-		if (bOverlaps)
-			DrawString({ 2, 450 }, "OVERLAP = TRUE");
-		if (bContains)
-			DrawString({ 2, 460 }, "CONTAINS = TRUE");
-		
-		DrawString({ 2, 470 }, "INTERSECTIONS = " + std::to_string(vIntersections.size()));
+		olc::vf2d vMouseDelta = GetMousePos() - vOldMousePos;
+		vOldMousePos = GetMousePos();
 
-		// Draw Shape 1 - Under User Control
-		switch (nShape1)
-		{
-		case Shapes::Point:
-		{
-			Draw(shapePoint1, olc::YELLOW);
-			break;
-		}
+		if (GetMouse(0).bReleased)
+			nSelectedShapeIndex = -1;
 
-		case Shapes::Line:
-		{
-			DrawLine(shapeLine1.start, shapeLine1.end, olc::YELLOW);
-			break;
-		}
+		// Check for mouse hovered shapes
+		ShapeWrap mouse{ Point{olc::vf2d(GetMousePos())} };
 
-		case Shapes::Rect:
+
+		if (nSelectedShapeIndex < vecShapes.size() && GetMouse(0).bHeld)
 		{
-			DrawRect(shapeRect1.pos, shapeRect1.size, olc::YELLOW);
-			break;
+			// Visit the selected shape and offset.
+			std::visit([&](auto& shape)
+			{
+				for (auto& p : shape.points)
+				{
+					p += vMouseDelta;
+				}
+			}, vecShapes[nSelectedShapeIndex]);
 		}
 
-		case Shapes::Circle:
+		size_t nMouseIndex = 0;
+		for (const auto& shape : vecShapes)
 		{
-			DrawCircle(shapeCircle1.pos, int32_t(shapeCircle1.radius), olc::YELLOW);
-			break;
+			if (CheckContains(shape, mouse))
+			{
+				break;
+			}
+
+			nMouseIndex++;
 		}
 
-		case Shapes::Triangle:
+		if (nMouseIndex < vecShapes.size() && GetMouse(0).bPressed)
+			nSelectedShapeIndex = nMouseIndex;
+
+		// Check Contains
+		std::vector<size_t> vContains;
+		std::vector<size_t> vOverlaps;
+		std::vector<olc::vf2d> vIntersections;
+		if (nSelectedShapeIndex < vecShapes.size())
 		{
-			DrawTriangle(shapeTriangle1.pos[0], shapeTriangle1.pos[1], shapeTriangle1.pos[2], olc::YELLOW);
-			break;
-		}
+			for (size_t i = 0; i < vecShapes.size(); i++)
+			{
+				if (i == nSelectedShapeIndex) continue; // No self check
+
+				const auto& vTargetShape = vecShapes[i];
+
+				const auto vPoints = CheckIntersects(vecShapes[nSelectedShapeIndex], vTargetShape);
+				vIntersections.insert(vIntersections.end(), vPoints.begin(), vPoints.end());
+
+				if(CheckContains(vecShapes[nSelectedShapeIndex], vTargetShape))
+					vContains.push_back(i);
+
+				if (CheckOverlaps(vecShapes[nSelectedShapeIndex], vTargetShape))
+					vOverlaps.push_back(i);
+			}
 		}
 
-		// Draw Shape 2 - Fixed
-		switch (nShape2)
+
+		ShapeWrap  ray1, ray2;
+
+
+
+		bool bRayMode = false;
+		if (GetMouse(1).bHeld)
 		{
-		case Shapes::Point:
-		{
-			Draw(shapePoint2, olc::WHITE);
-			break;
+			// Enable Ray Mode
+			bRayMode = true;
+
+			ray1 = { Ray{{ { 10.0f, 10.0f }, olc::vf2d(GetMousePos())} }}; 
+			ray2 = { Ray{{ { float(ScreenWidth() - 10), 10.0f }, olc::vf2d(GetMousePos())} }};
+
+			
+			for (size_t i = 0; i < vecShapes.size(); i++)
+			{
+				const auto& vTargetShape = vecShapes[i];
+
+				const auto vPoints1 = CheckIntersects(ray1, vTargetShape);
+				vIntersections.insert(vIntersections.end(), vPoints1.begin(), vPoints1.end());
+
+				const auto vPoints2 = CheckIntersects(ray2, vTargetShape);
+				vIntersections.insert(vIntersections.end(), vPoints2.begin(), vPoints2.end());
+
+			}
+
+			const auto vPoints3 = CheckIntersects(ray2, ray1);
+			vIntersections.insert(vIntersections.end(), vPoints3.begin(), vPoints3.end());
+			
+
 		}
 
-		case Shapes::Line:
-		{
-			DrawLine(shapeLine2.start, shapeLine2.end, olc::WHITE);
-			break;
-		}
+		// Draw All Shapes
+		for (const auto& shape : vecShapes)
+			DrawShape(shape);
 
-		case Shapes::Rect:
-		{
-			DrawRect(shapeRect2.pos, shapeRect2.size, olc::WHITE);
-			break;
-		}
 
-		case Shapes::Circle:
-		{
-			DrawCircle(shapeCircle2.pos, int32_t(shapeCircle2.radius), olc::WHITE);
-			break;
-		}
+		// Draw Overlaps
+		for (const auto& shape_idx : vOverlaps)
+			DrawShape(vecShapes[shape_idx], olc::YELLOW);
 
-		case Shapes::Triangle:
-		{
-			DrawTriangle(shapeTriangle2.pos[0], shapeTriangle2.pos[1], shapeTriangle2.pos[2], olc::WHITE);
-			break;
-		}
-		}
+		// Draw Contains
+		for (const auto& shape_idx : vContains)
+			DrawShape(vecShapes[shape_idx], olc::MAGENTA);
+
+		// Draw Manipulated Shape
+		if(nSelectedShapeIndex < vecShapes.size())
+			DrawShape(vecShapes[nSelectedShapeIndex], olc::GREEN);
 
 		// Draw Intersections
-		for (const auto& i : vIntersections)
-			FillCircle(i, 3, olc::RED);
+		for (const auto& intersection : vIntersections)
+			FillCircle(intersection, 3, olc::RED);
 
-
-		DrawCircle(vClosest, 5, olc::GREEN);
-
-		if (guiEnvelopeShape[0]->bChecked)
+		if (bRayMode)
 		{
-			circle<float> envelopingCircle;
-			switch (nShape2)
-			{
-			case Shapes::Point:
-				envelopingCircle = envelope_c(shapePoint2);
-				break;
-			case Shapes::Line:
-				envelopingCircle = envelope_c(shapeLine2);
-				break;
-			case Shapes::Rect:
-				envelopingCircle = envelope_c(shapeRect2);
-				break;
-			case Shapes::Circle:
-				envelopingCircle = envelope_c(shapeCircle2);
-				break;
-			case Shapes::Triangle:
-				envelopingCircle = bounding_circle(shapeTriangle2);
-				break;
-			}
-			// using ceil to make sure it looks right
-			DrawCircle(envelopingCircle.pos, int(std::ceil(envelopingCircle.radius)), olc::VERY_DARK_YELLOW);
-		}
-		if (guiEnvelopeShape[1]->bChecked)
-		{
-			rect<float> envelopingRect;
-			switch (nShape2)
-			{
-			case Shapes::Point:
-				envelopingRect = envelope_r(shapePoint2);
-				break;
-			case Shapes::Line:
-				envelopingRect = envelope_r(shapeLine2);
-				break;
-			case Shapes::Rect:
-				envelopingRect = envelope_r(shapeRect2);
-				break;
-			case Shapes::Circle:
-				envelopingRect = envelope_r(shapeCircle2);
-				break;
-			case Shapes::Triangle:
-				envelopingRect = bounding_box(shapeTriangle2);
-				break;
-			}
-			DrawRect(envelopingRect.pos, envelopingRect.size, olc::MAGENTA);
+			DrawShape(ray1, olc::CYAN); 
+			DrawShape(ray2, olc::CYAN);
 		}
 
-		guiManager.Draw(this);
+		// Laser beam		
+		ray<float> ray_laser{ {10.0f, 300.0f}, {1.0f, 0.0f} };
+		bool ray_stop = false;
+		int nBounces = 100;
+		size_t last_hit_index = -1;
+		
+		
+		ray<float> ray_reflected;
+
+		while (!ray_stop && nBounces > 0)
+		{
+			// Find closest
+			ray_stop = true;
+			size_t closest_hit_index = -1;
+			float fClosestDistance = 10000000.0f;
+
+			for (size_t i = 0; i < vecShapes.size(); i++)
+			{
+				// Dont check against origin shape
+				if (i == last_hit_index) continue;
+
+				const auto& vTargetShape = vecShapes[i];
+				auto hit = CheckReflect(ray_laser, vTargetShape);
+				if (hit.has_value())
+				{
+					float d = (ray_laser.origin - hit.value().origin).mag();
+					if (d < fClosestDistance)
+					{
+						fClosestDistance = d;
+						closest_hit_index = i;
+						ray_reflected = hit.value();
+					}					
+				}
+			}
+
+			if (closest_hit_index != -1)
+			{				
+				DrawLine(ray_laser.origin, ray_reflected.origin, olc::Pixel(rand() % 155 + 100, 0, 0));
+				ray_laser = ray_reflected;
+				ray_stop = false;
+				last_hit_index = closest_hit_index;
+				nBounces--;
+			}
+
+			if (ray_stop)
+			{
+				// Ray didnt hit anything
+				nBounces = 0;
+				DrawLine(ray_laser.origin, ray_laser.origin + ray_laser.direction * 1000.0f, olc::Pixel(rand() % 155 + 100, 0, 0));
+			}
+		}
+		
 
 		return true;
 	}
@@ -588,7 +417,7 @@ public:
 int main()
 {
 	Test_Geometry2D demo;
-	if (demo.Construct(512, 480, 2, 2))
+	if (demo.Construct(512, 480, 2, 2, false, true))
 		demo.Start();
 	return 0;
 }

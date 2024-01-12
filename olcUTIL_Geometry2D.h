@@ -311,7 +311,12 @@ namespace olc
 		// Linearly interpolate between this vector, and another vector, given normalised parameter 't'
 		inline constexpr v_2d lerp(const v_2d& v1, const double t) const
 		{
-			return (T(1.0 - t)) + (v1 * T(t));
+			return this->operator*(T(1.0 - t)) + (v1 * T(t));
+		}
+
+		inline constexpr v_2d operator * (const T& rhs) const 
+		{ 
+			return v_2d(this->x * rhs, this->y * rhs);
 		}
 
 		// Compare if this vector is numerically equal to another

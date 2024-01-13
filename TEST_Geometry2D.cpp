@@ -29,6 +29,9 @@ using namespace olc::utils::geom2d;
 template<class... Ts>
 struct overloads : Ts... { using Ts::operator()...; };
 
+template<class... Ts>
+overloads(Ts...) -> overloads<Ts...>;
+
 class Test_Geometry2D : public olc::PixelGameEngine
 {
 public:

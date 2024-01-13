@@ -168,6 +168,18 @@ public:
 		return std::visit(dispatch, s2);
 	}
 
+	olc::v_2d<double> GetClosest(const olc::v_2d<double> p, const ShapeWrap& s)
+	{
+		const auto dispatch = overloads{
+			[&](const auto& a) -> olc::v_2d<double>
+			{
+				return closest(make_internal(a), p);
+			}
+		};
+
+		return std::visit(dispatch, s);
+	}
+
 	void draw_internal(const Point& x, const olc::Pixel col)
 	{
 		const auto p = make_internal(x);
@@ -266,7 +278,8 @@ public:
 		size_t nMouseIndex = 0;
 		for (const auto& shape : vecShapes)
 		{
-			if (CheckContains(shape, mouse))
+			const int shapeMargin = 5;
+			if (CheckContains(shape, mouse) || (GetClosest(vOldMousePos, shape) - vOldMousePos).mag() < shapeMargin)
 			{
 				break;
 			}
@@ -347,8 +360,10 @@ public:
 			DrawShape(vecShapes[shape_idx], olc::MAGENTA);
 
 		// Draw Manipulated Shape
-		if(nSelectedShapeIndex < vecShapes.size())
+		if (nSelectedShapeIndex < vecShapes.size())
 			DrawShape(vecShapes[nSelectedShapeIndex], olc::GREEN);
+		else if (nMouseIndex < vecShapes.size())
+			DrawShape(vecShapes[nMouseIndex], olc::DARK_GREEN);
 
 		// Draw Intersections
 		for (const auto& intersection : vIntersections)

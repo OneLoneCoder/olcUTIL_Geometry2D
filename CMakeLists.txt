@@ -181,7 +181,7 @@ include_directories("${CMAKE_SOURCE_DIR}/third_party")
 option(ENABLE_GEOM2D_UNIT_TESTS "Enable unit tests for /olcUTIL_Geometry2D" OFF)
 
 # unit tests
-# I use this with cmake -G Ninja -DBUILD_GMOCK=OFF -DINSTALL_GTEST=OFF -DENABLE_GEOM2D_UNIT_TESTS=ON ..
+# I use this with: cmake -G Ninja -DBUILD_GMOCK=OFF -DINSTALL_GTEST=OFF -DENABLE_GEOM2D_UNIT_TESTS=ON ..
 if(ENABLE_GEOM2D_UNIT_TESTS)
     enable_testing()
 

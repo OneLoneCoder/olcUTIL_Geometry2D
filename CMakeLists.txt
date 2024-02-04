@@ -175,3 +175,42 @@ if (EXISTS "${CMAKE_SOURCE_DIR}/${C_CXX_HEADERS_DIR}" AND IS_DIRECTORY "${CMAKE_
 endif (EXISTS "${CMAKE_SOURCE_DIR}/${C_CXX_HEADERS_DIR}" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/${C_CXX_HEADERS_DIR}")
 
 include_directories("${CMAKE_SOURCE_DIR}/third_party")
+
+
+# Define an option to enable/disable unit tests
+option(ENABLE_GEOM2D_UNIT_TESTS "Enable unit tests for /olcUTIL_Geometry2D" OFF)
+
+# unit tests
+# I use this with cmake -G Ninja -DBUILD_GMOCK=OFF -DINSTALL_GTEST=OFF -DENABLE_GEOM2D_UNIT_TESTS=ON ..
+if(ENABLE_GEOM2D_UNIT_TESTS)
+    enable_testing()
+
+    # Code Coverage
+    set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake")
+    include(coverage)
+    add_coverage_target("*/tests/*")
+
+    # Fetch Google Test
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git 
+        GIT_TAG v1.14.0
+    )
+    FetchContent_MakeAvailable(googletest)
+
+    add_executable(unit_tests 
+        tests/test_circle.cpp # TODO: use cmake to find all test files
+    )
+
+    # Disable optimization for coverage
+    # TODO: only tested with gcc
+    target_compile_options(unit_tests PRIVATE 
+        -O0 -fprofile-arcs -ftest-coverage --coverage
+    )
+    target_link_options(unit_tests PRIVATE --coverage)  
+
+    target_link_libraries(unit_tests gtest_main)
+
+    add_test(NAME unit_tests COMMAND unit_tests)
+endif()

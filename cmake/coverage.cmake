@@ -23,7 +23,7 @@ function(add_coverage_target exclude)
         add_custom_target(cov DEPENDS ${covname})
         add_custom_command(
             OUTPUT  ${covname}
-            COMMAND ${LCOV} -c -o ${covname} -d . -b . --gcov-tool ${GCOV} --ignore-errors mismatch
+            COMMAND ${LCOV} -c -o ${covname} -d . -b . --gcov-tool ${GCOV} #--ignore-errors mismatch
             # In the following I explicitly exclude system headers from the coverage report
             COMMAND ${LCOV} -r ${covname} -o ${covname} ${exclude}  "\*/googletest/\*" "\*/g++\*/bits/\*" "'*/g++-v13/*'"
             COMMAND ${LCOV} -l ${covname}

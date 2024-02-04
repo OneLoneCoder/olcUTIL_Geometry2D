@@ -30,7 +30,6 @@ jobs:
 
     - name: Create build directory
       run: |
-        #rm -rf build
         mkdir build
         du -hs build
 

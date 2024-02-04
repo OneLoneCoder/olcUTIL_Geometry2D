@@ -1,4 +1,4 @@
-name: CMake Build Ryzen Monitor ImGui
+name: Unit Tests and Code Coverage
 
 on:
   push:

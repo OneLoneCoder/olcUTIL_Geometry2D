@@ -188,6 +188,7 @@ if(ENABLE_GEOM2D_UNIT_TESTS)
     # Code Coverage
     set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${PROJECT_SOURCE_DIR}/cmake")
     include(coverage)
+    # the following pattern excludes all tests from coverage report
     add_coverage_target("*/tests/*")
 
     # Fetch Google Test

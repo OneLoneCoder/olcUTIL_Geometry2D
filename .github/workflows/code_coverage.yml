@@ -60,10 +60,13 @@ jobs:
       run: |
         ninja -C build cov
 
-    - name: Generate JSON coverage report
-      working-directory: ./build
-      run: |
-        gcovr -r .. . --branches --cobertura > coverage.xml
+# The following article describes how to publish code coverage to codecov.io:
+# https://dev.to/askrodney/cmake-coverage-example-with-github-actions-and-codecovio-5bjp
+# I can't get it to work, though. We can just download the html, for now.
+#    - name: Generate JSON coverage report
+#      working-directory: ./build
+#      run: |
+#        gcovr -r .. . --branches --cobertura > coverage.xml
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v3

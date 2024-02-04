@@ -59,7 +59,6 @@ jobs:
     - name: Collect coverage
       run: |
         ninja -C build cov
-        lcov --list build/coverage.info
 
     - name: Generate JSON coverage report
       working-directory: ./build

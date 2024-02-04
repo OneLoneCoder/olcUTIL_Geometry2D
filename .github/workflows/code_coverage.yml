@@ -17,6 +17,8 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y cmake ninja-build \
+          libxrandr-dev libxinerama-dev \
+          libxcursor-dev libxi-dev libgl1-mesa-dev \
           gcovr lcov
 
 # Do we need a very modern compiler?

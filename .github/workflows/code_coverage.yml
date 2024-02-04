@@ -71,6 +71,13 @@ jobs:
         name: TEST_Geometry2D_linux_amd64_artifact1
         path: build/bin/TEST_Geometry2D
 
+    - name: Publish coverage artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: code-coverage
+        path: build/coverage
+  
+
     # - name: Upload Release Asset  
     #   uses: actions/upload-release-asset@v1  
     #   env:  

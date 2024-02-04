@@ -1091,8 +1091,6 @@ namespace olc::utils::geom2d
 		return distance < epsilon;
 	}
 
-
-
 	// overlaps(p,p)
 	// Check if point overlaps with point (analogous to contains())
 	template<typename T1, typename T2>

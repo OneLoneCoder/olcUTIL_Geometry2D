@@ -46,7 +46,7 @@ jobs:
         #export CXXFLAGS="-std=c++20"
         cmake -S . -B build -G Ninja \
          -DCMAKE_BUILD_TYPE=Debug \
-         -DENABLE_GEOM2D_TESTS=ON \
+         -DENABLE_GEOM2D_UNIT_TESTS=ON \
          -DBUILD_GMOCK=OFF \
          -DINSTALL_GTEST=OFF
 

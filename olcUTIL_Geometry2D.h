@@ -173,7 +173,7 @@
              |              |              |              |              |              |              |
     ---------+--------------+--------------+--------------+--------------+--------------+--------------+
     RAY      |              |              |              |              |              |              |
-             |              |              |              |              |              |              |
+             | closest      |              |              |              |              |              |
              |              | collision    | collision    | collision    | collision    | collision*   |
              |              | intersects   | intersects   | intersects   | intersects   | intersects   |
              |              | reflect      | reflect      | reflect      | reflect      | reflect*     |
@@ -882,8 +882,50 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const ray<T1>& r, const olc::v_2d<T2>& p)
 	{
-		// TODO: implement
-		return p;
+		// We can divide the 2d space with a vector perpendicular to the rays direction into two half-spaces.
+		// These will be use to differentiate between two cases.
+		olc::v_2d<T1> perpendicular_ray_direction = { -r.direction.y, r.direction.x };
+		olc::v_2d<T1> ray_origin_to_p = p - r.origin;
+		bool behind_ray_origin = perpendicular_ray_direction.x * ray_origin_to_p.y
+			- perpendicular_ray_direction.y * ray_origin_to_p.x >= 0;
+
+
+		if (behind_ray_origin)
+		{
+			// Case 1: If p lies in the half-space where the direction of the ray does not fall into,
+			// then the closest point on the ray to point p will always be the origin of the ray.
+			// This case also includes all points lying on a line,
+			// which is both perpendicular to the rays direction as well as going through the rays origin.
+			return r.origin;
+		}
+		else
+		{
+			// Case 2: If the point p lies in the half-space where the direction of the ray is contained,
+			// then the closest point on the ray r to point p is the projection of p onto the r.
+			T1 relative_p_position = r.direction.x * ray_origin_to_p.y
+				- r.direction.y * ray_origin_to_p.x;
+
+			// The point lies directly on the ray and can thus be returned as closest point.
+			if (relative_p_position == 0)
+			{
+				return p;
+			}
+
+			// Determine the direction we have to shoot the projection ray in, based on whether the point p is to the
+			// left or right of ray r's direction.
+			olc::v_2d<T1> project_ray_direction = relative_p_position > 0 ?
+				-perpendicular_ray_direction :
+				perpendicular_ray_direction;
+
+			// Find the closest point on ray r from point p using the ray intersection between r and the constructed 
+			// projection_ray.
+			ray<T1> projection_ray = { p, project_ray_direction };
+			auto intersections = intersects(r, projection_ray);
+
+			// Given the case we are handling here, there will always be exactly one intersection, so it is safe to
+			// access the first element of the insertions vector.
+			return intersections[0];
+		}
 	}
 
 

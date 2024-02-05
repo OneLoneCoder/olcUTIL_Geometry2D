@@ -377,6 +377,13 @@ public:
 
 		// Laser beam		
 		ray<float> ray_laser{ {10.0f, 300.0f}, {1.0f, 0.0f} };
+
+		// Display a light-blue point for testing the closest-function between the ray ray_laser and 
+		// the point mouse_position
+		olc::vf2d mouse_position = GetMousePos();
+		auto closest_between_ray_and_point = closest(ray_laser, mouse_position);
+		olc::PixelGameEngine::FillCircle(closest_between_ray_and_point, 2, olc::Pixel(50, 200, 255));
+
 		bool ray_stop = false;
 		int nBounces = 100;
 		size_t last_hit_index = -1;

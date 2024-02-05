@@ -2219,6 +2219,51 @@ namespace olc::utils::geom2d
 		return std::nullopt;
 	}
 
+	// collision(q,q)
+	// optionally returns collision point and collision normal of ray and a ray, if it collides
+	template<typename T1, typename T2>
+	inline std::optional<std::pair<olc::v_2d<T2>, olc::v_2d<T2>>> collision(const ray<T1>& q1, const ray<T2>& q2)
+	{
+		//ray1 : y = ax + b
+		float Slope1 = q1.direction.y / q1.direction.x;
+		//line offset
+		float b1 = q1.origin.y - Slope1*q1.origin.x;
+		//ray2 : y = ax + b
+		float Slope2 = q2.direction.y / q2.direction.x;
+		//line offset
+		float b2 = q2.origin.y - Slope2*q2.origin.x;
+		if(q1.direction.x == 0){
+			//ray1 is vertical.
+			olc::v_2d<T2> Point;
+			Point.x = q1.origin.x;
+			Point.y = Slope2 * Point.x + b2;
+
+			olc::v_2d<T2> Normal(1, 0);
+			return { {Point, Normal.norm()} };
+		}
+		if(q2.direction.x == 0){
+			//ray2 is vertical.
+			olc::v_2d<T2> Point;
+			Point.x = q2.origin.x;
+			Point.y = Slope1 * Point.x + b2;
+
+			olc::v_2d<T2> Normal(Slope1, -1);
+			return { {Point, Normal.norm()} };
+		}
+		if(Slope1 == Slope2){
+			//Lines are parallel so no intersection.
+			return std::nullopt;
+		}
+
+		//Solve the ray equations to find the intersection.
+		olc::v_2d<T2> Point;
+		Point.x = (b2 - b1)/(Slope1 - Slope2);
+		Point.y = Slope1 * Point.x + b1;
+
+		olc::v_2d<T2> Normal(Slope1, -1);
+		return { {Point, Normal.norm()} };
+	}
+
 	// reflect(q,l)
 	// optionally returns a ray reflected off a line segement if collision occurs
 	template<typename T1, typename T2>
@@ -2243,7 +2288,7 @@ namespace olc::utils::geom2d
 	}
 
 	// collision(q,r)
-	// optionally returns collision point and collision normal of ray and a line segment, if it collides
+	// optionally returns collision point and collision normal of ray and a rectangle, if it collides
 	template<typename T1, typename T2>
 	inline std::optional<std::pair<olc::v_2d<T1>, olc::v_2d<T1>>> collision(const ray<T1>& q, const rect<T2>& r)
 	{

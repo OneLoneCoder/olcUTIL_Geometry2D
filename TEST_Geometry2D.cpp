@@ -373,6 +373,13 @@ public:
 		{
 			DrawShape(ray1, olc::CYAN); 
 			DrawShape(ray2, olc::CYAN);
+			Ray rayTest1 = { Ray{{ { 10.0f, 10.0f }, olc::vf2d(GetMousePos())} }}; 
+			Ray rayTest2 = { Ray{{ { float(ScreenWidth() - 10), 10.0f }, olc::vf2d(GetMousePos())} }};
+			const auto RayCol = collision(make_internal(rayTest1), make_internal(rayTest2));
+			if(RayCol.has_value()){
+				FillCircle(RayCol.value().first, 5, olc::WHITE);
+				DrawLine(RayCol.value().first, RayCol.value().first + RayCol.value().second * 40, olc::RED);
+			}
 		}
 
 		// Laser beam		

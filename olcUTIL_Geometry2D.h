@@ -161,7 +161,7 @@
              |              |              |              |              |              |              |
     ---------+--------------+--------------+--------------+--------------+--------------+--------------+
     CIRCLE   | contains     | contains     | contains     | contains     | contains     |              |
-             | closest      | closest      |              | closest      |              |              |
+             | closest      | closest      |              |              |              |              |
              | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
              | intersects   | intersects   | intersects   | intersects   | intersects   |              |
              | project      | project      |              | project      |              |              |
@@ -951,7 +951,8 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const circle<T1>& c, const circle<T2>& l)
 	{
-		return closest(c, l.pos);
+		// TODO:
+		return {};
 	}
 
 	// closest(t,c)

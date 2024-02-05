@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Carl\Desktop\olcUTIL_Geometry2D\CMakeFiles\ce20d1793c5890c7266a4898ce02c655\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{63D71894-0AD7-36F3-8832-872A7B00659F}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

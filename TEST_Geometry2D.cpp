@@ -263,6 +263,9 @@ public:
 		vecShapes.push_back({ Triangle{{ {50.0f, 100.0f}, {10.0f, 150.0f}, {90.0f, 150.0f}} }});
 		vecShapes.push_back({ Triangle{{ {350.0f, 200.0f}, {500.0f, 150.0f}, {450.0f, 400.0f}} }});
 
+		vecShapes.push_back({create_regular_convex_polygon(5, 50, {150, 150})});
+		vecShapes.push_back({create_regular_convex_polygon(8, 80, {300, 150})});
+
 		return true;
 	}
 
@@ -446,6 +449,20 @@ public:
 		
 
 		return true;
+	}
+
+	Polygon create_regular_convex_polygon(uint32_t point_count, float scale = 1, const olc::vf2d& translation = {})
+	{
+		Polygon polygon;
+		float angle = olc::utils::geom2d::pi * 2 / (float)point_count;
+
+		for(uint32_t i = 0; i < point_count; ++i)
+		{
+			olc::vf2d point = olc::vf2d{std::cos(angle * i), std::sin(angle * i)} * scale + translation;
+			polygon.points.push_back(point);
+		}
+
+		return polygon;
 	}
 };
 

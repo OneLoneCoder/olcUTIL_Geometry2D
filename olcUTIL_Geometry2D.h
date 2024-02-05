@@ -539,6 +539,29 @@ namespace olc::utils::geom2d
 
 			return filtered_points;
 		}
+
+		template <typename T>
+		bool overlaps(const std::vector<v_2d<T>>& a, const std::vector<v_2d<T>>& b)
+		{
+			for(uint32_t i = 0; i < a.size(); ++i)
+			{
+				uint32_t next = (i + 1) % a.size();
+				olc::v_2d<T> edge = a[next] - a[i];
+				olc::v_2d<T> normal = -edge.perp();
+				T minProj = std::numeric_limits<T>::max();
+
+				for(uint32_t j = 0; j < b.size(); ++j)
+				{
+					T proj = normal.dot(b[j] - a[i]);
+					minProj = std::min(minProj, proj);
+				}
+
+				if(minProj >= 0)
+					return false;
+			}
+
+			return true;
+		}
 	};
 
 	//https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
@@ -2447,7 +2470,7 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool overlaps(const polygon<T>& poly1, const polygon<T>& poly2)
 	{
-		return false;
+		return internal::overlaps(poly1.pos, poly2.pos) && internal::overlaps(poly2.pos, poly1.pos);
 	}
 
 	// overlaps(poly,p)

@@ -780,6 +780,98 @@ namespace olc::utils::geom2d
 	struct polygon
 	{
 		std::vector<olc::v_2d<T>> pos;
+
+        // initialize vector to n elements with 0.0, 0.0
+        inline polygon(size_t nPoints = 3) : pos(nPoints, olc::v_2d<T>(0, 0))
+		{ }
+
+        // return a reference to the specified point
+        inline constexpr olc::v_2d<T>& operator[] (const int& i)
+        {
+            return pos[i];
+        }
+
+        // create a line between the points i, i + 1
+		inline constexpr line<T> side(const size_t i) const
+		{
+			return line(pos[i % pos.size()], pos[(i + 1) % pos.size()]);
+		}
+
+		// get area of polygon
+		inline constexpr T area() const
+        {
+            size_t n = pos.size();
+            T result = 0;
+            for (size_t i = 0; i < n; ++i)
+            {
+                const olc::v_2d<T>& p1 = pos[i];
+                const olc::v_2d<T>& p2 = pos[(i + 1) % n];
+                result += (p1.x * p2.y - p2.x * p1.y);
+            }
+            return std::abs(result) / 2; // The area should always be positive
+        }
+
+
+        // get perimeter of polygon
+		inline constexpr T perimeter() const
+		{
+			T perimeter = 0;
+			for(int i = 0; i < side_count(); i++) 
+			{
+                perimeter += side(i).length();
+			}
+			return perimeter;
+		}
+
+        // get side count of polygon
+		inline constexpr size_t side_count() const 
+        {
+			return pos.size();
+		}
+
+        inline constexpr bool is_convex() const 
+        {
+            size_t n = pos.size();
+
+            bool anyNegative = false;
+            bool anyPositive = false;
+
+            for (size_t i = 0; i < n; ++i)
+            {
+                olc::v_2d<T> v1 = pos[i] - pos[(i + 1) % n];
+                olc::v_2d<T> v2 = pos[(i + 2) % n] - pos[(i + 1) % n];
+
+                T crossProduct = v1.cross(v2);
+
+                if (crossProduct < 0)
+                    anyNegative = true;
+                else if (crossProduct > 0)
+                    anyPositive = true;
+
+                // If crossProduct is 0, the points are collinear, and we can ignore them
+            }
+
+            // If all cross products have the same sign, the polygon is convex
+            return !(anyNegative && anyPositive);
+        }
+
+
+        inline constexpr olc::v_2d<T> center() const
+        {
+            size_t n = pos.size();
+            
+            T sumX = 0;
+            T sumY = 0;
+
+            for (const auto& vertex : pos)
+            {
+                sumX += vertex.x;
+                sumY += vertex.y;
+            }
+
+            return olc::v_2d<T>(sumX / n, sumY / n);
+        }
+
 	};
 
 

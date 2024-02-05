@@ -1,3 +1,0 @@
-C:/Users/Carl/Desktop/olcUTIL_Geometry2D/CMakeFiles/TEST_Geometry2D.dir
-C:/Users/Carl/Desktop/olcUTIL_Geometry2D/CMakeFiles/ALL_BUILD.dir
-C:/Users/Carl/Desktop/olcUTIL_Geometry2D/CMakeFiles/ZERO_CHECK.dir

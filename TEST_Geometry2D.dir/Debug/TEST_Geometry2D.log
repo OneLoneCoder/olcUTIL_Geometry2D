@@ -1,3 +1,0 @@
-﻿  TEST_Geometry2D.cpp
-C:\Users\Carl\Desktop\olcUTIL_Geometry2D\TEST_Geometry2D.cpp(457,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-  TEST_Geometry2D.vcxproj -> C:\Users\Carl\Desktop\olcUTIL_Geometry2D\bin\Debug\TEST_Geometry2D.exe

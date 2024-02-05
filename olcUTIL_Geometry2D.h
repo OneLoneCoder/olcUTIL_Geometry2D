@@ -190,6 +190,7 @@
 #include <cstdint>
 #include <optional>
 #include <cassert>
+#include <array>
 
 #ifndef OLC_V2D_TYPE
 #define OLC_V2D_TYPE
@@ -2104,7 +2105,7 @@ namespace olc::utils::geom2d
 		olc::v_2d<T2> vClosest;
 		for (const auto& vContact : vAllIntersections)
 		{
-			double dDistance = (vContact - c.pos).mag2();
+			double dDistance = (vContact - q.origin).mag2();
 			if (dDistance < dClosest)
 			{
 				dClosest = dDistance;
@@ -2120,8 +2121,37 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2, typename T3>
 	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const rect<T2>& r, const ray<T3>& q)
 	{
-		// TODO:
-		return std::nullopt;
+		const auto s1 = project(c, r.top(), q);
+		const auto s2 = project(c, r.bottom(), q);
+		const auto s3 = project(c, r.left(), q);
+		const auto s4 = project(c, r.right(), q);
+
+		std::vector<olc::v_2d<T2>> vAllIntersections;
+		if (s1.has_value()) vAllIntersections.push_back(s1.value());
+		if (s2.has_value()) vAllIntersections.push_back(s2.value());
+		if (s3.has_value()) vAllIntersections.push_back(s3.value());
+		if (s4.has_value()) vAllIntersections.push_back(s4.value());
+		
+		if (vAllIntersections.size() == 0)
+		{
+			// No intersections at all, so
+			return std::nullopt;
+		}
+
+		// Find closest
+		double dClosest = std::numeric_limits<double>::max();
+		olc::v_2d<T2> vClosest;
+		for (const auto& vContact : vAllIntersections)
+		{
+			double dDistance = (vContact - q.origin).mag2();
+			if (dDistance < dClosest)
+			{
+				dClosest = dDistance;
+				vClosest = vContact;
+			}
+		}
+
+		return vClosest;
 	}
 
 	// project(c,t)

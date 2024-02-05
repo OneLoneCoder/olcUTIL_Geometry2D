@@ -172,7 +172,7 @@
              | intersects   | intersects   | intersects   | intersects   | intersects   |              |
              |              |              |              |              |              |              |
     ---------+--------------+--------------+--------------+--------------+--------------+--------------+
-    RAY      |              |              |              |              |              |              |
+    RAY      | contains     |              |              |              |              |              |
              |              |              |              |              |              |              |
              |              | collision    | collision    | collision    | collision    | collision*   |
              |              | intersects   | intersects   | intersects   | intersects   | intersects   |
@@ -1065,10 +1065,35 @@ namespace olc::utils::geom2d
 		return s >= T2(0) && v >= T2(0) && (s + v) <= T2(2) * A * sign;
 	}
 
+	template<typename T1, typename T2>
+	inline constexpr bool contains(const ray<T1>& r, const olc::v_2d<T2>& p)
+	{
+		// Calculate the vector from the ray's origin to point p
+		olc::v_2d<T2> op = p - r.origin;
 
+		// Calculate the dot product between op and the ray's direction
+		// This checks if p is in the direction of the ray and not behind the origin
+		T2 dotProduct = op.dot(r.direction);
+
+		if (dotProduct < 0) {
+			// p is behind the ray's origin
+			return false;
+		}
+
+		// Project op onto the ray's direction (which is already normalized)
+		olc::v_2d<T2> projection = { r.direction.x * dotProduct, r.direction.y * dotProduct };
+
+		// Check if the projection of op onto the ray's direction is equivalent to op
+		// This is true if p lies on the ray
+
+		T2 distance = std::sqrt((projection.x - op.x) * (projection.x - op.x) + (projection.y - op.y) * (projection.y - op.y));
+
+		// Assuming a small threshold for floating point arithmetic issues
+		return distance < epsilon;
+	}
 
 	// overlaps(p,p)
-	// Check if point overlaps with point (analagous to contains())
+	// Check if point overlaps with point (analogous to contains())
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const olc::v_2d<T1>& p1, const olc::v_2d<T2>& p2)
 	{

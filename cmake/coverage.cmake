@@ -23,12 +23,12 @@ function(add_coverage_target exclude)
         add_custom_target(cov DEPENDS ${covname})
         add_custom_command(
             OUTPUT  ${covname}
-            COMMAND ${LCOV} -c -o ${covname} -d . -b . --gcov-tool ${GCOV} #--ignore-errors mismatch
+            COMMAND ${LCOV} -c -o ${covname} --branch-coverage -d . -b . --gcov-tool ${GCOV} --ignore-errors mismatch
             # In the following I explicitly exclude system headers from the coverage report
-            COMMAND ${LCOV} -r ${covname} -o ${covname} ${exclude}  "\*/googletest/\*" "\*/g++\*/bits/\*" "'*/g++-v13/*'"
-            COMMAND ${LCOV} -l ${covname}
-            COMMAND ${GENHTML} ${covname} -output coverage
-            COMMAND ${LCOV} -l ${covname} 2>/dev/null | grep Total | sed 's/|//g' | sed 's/Total://g' | awk '{print $1}' | sed s/%//g > coverage/total
+            COMMAND ${LCOV} -r ${covname} --branch-coverage  -o ${covname} ${exclude}  "\*/googletest/\*" "\*/g++\*/bits/\*" "'*/g++-v13/*'"
+            COMMAND ${LCOV} -l ${covname} --branch-coverage 
+            COMMAND ${GENHTML} ${covname} --branch-coverage -output coverage
+            COMMAND ${LCOV} -l ${covname} --branch-coverage  2>/dev/null | grep Total | sed 's/|//g' | sed 's/Total://g' | awk '{print $1}' | sed s/%//g > coverage/total
         )
         set_directory_properties(PROPERTIES
             ADDITIONAL_CLEAN_FILES ${covname}

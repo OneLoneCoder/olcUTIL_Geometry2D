@@ -222,6 +222,17 @@ public:
 		DrawLine(t.origin, t.origin+t.direction * 1000.0f, col, 0xF0F0F0F0);
 	}
 
+	void draw_internal(const Polygon& x, const olc::Pixel col)
+	{
+		const auto t = make_internal(x);
+
+		for(uint32_t i = 0; i < t.pos.size(); ++i)
+		{
+			uint32_t next = (i + 1) % t.pos.size();
+			DrawLine(t.pos[i], t.pos[next], col);
+		}
+	}
+
 	void DrawShape(const ShapeWrap& shape, const olc::Pixel col = olc::WHITE)
 	{
 		std::visit([&](const auto& x)

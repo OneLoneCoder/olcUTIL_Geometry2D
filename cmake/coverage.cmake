@@ -16,6 +16,8 @@ function(add_coverage_target exclude)
     endif()
 
     if (LCOV AND GCOV AND GENHTML)
+    # the following link describes how to write unit tests for header only libraries
+    # https://stackoverflow.com/questions/9666800/getting-useful-gcov-results-for-header-only-libraries
         set(covname cov.info)
         # the original file set all compile options here, but I prefer to set them in the CMakeLists.txt
         #add_compile_options(-fprofile-arcs -ftest-coverage)

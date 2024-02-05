@@ -173,7 +173,7 @@
              |              |              |              |              |              |              |
     ---------+--------------+--------------+--------------+--------------+--------------+--------------+
     RAY      |              |              |              |              |              |              |
-             |              |              |              |              |              |              |
+             | closest      |              |              |              |              |              |
              |              | collision    | collision    | collision    | collision    | collision*   |
              |              | intersects   | intersects   | intersects   | intersects   | intersects   |
              |              | reflect      | reflect      | reflect      | reflect      | reflect*     |
@@ -878,13 +878,13 @@ namespace olc::utils::geom2d
 		}
 	}
 
-	// closest(ray,p)
+	// closest(q,p)
 	// Returns closest point on ray to point
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const ray<T1>& r, const olc::v_2d<T2>& p)
+	inline constexpr olc::v_2d<T1> closest(const ray<T1>& q, const olc::v_2d<T2>& p)
 	{
-		// TODO: implement
-		return p;
+		double u = std::max(double(q.direction.dot(p - q.origin)) / q.direction.mag2(), 0.0);
+		return q.origin + u * q.direction;
 	}
 
 

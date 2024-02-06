@@ -2606,7 +2606,7 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool overlaps(const triangle<T>& t, const polygon<T>& poly)
 	{
-		return false;
+		return overlaps(poly, t);
 	}
 
 	// contains(poly,poly)

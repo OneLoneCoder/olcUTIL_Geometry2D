@@ -2598,7 +2598,17 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool contains(const polygon<T>& poly, const v_2d<T>& p)
 	{
-		return false;
+		for(uint32_t i = 0; i < poly.pos.size(); ++i)
+		{
+			uint32_t next = (i + 1) % poly.pos.size();
+			olc::v_2d<T> edge = poly.pos[next] - poly.pos[i];
+			olc::v_2d<T> normal = -edge.perp();
+
+			if(normal.dot(p - poly.pos[i]) > 0)
+				return false;
+		}
+
+		return true;
 	}
 
 	// contains(poly,l)

@@ -86,6 +86,11 @@ public:
 		olc::vf2d points[2]; // origin, direction
 	};
 
+	struct Polygon
+	{
+		std::vector<olc::vf2d> points; // vertices
+	};
+
 	// Create desired shapes using a sequence of points
 	static auto make_internal(const Point& p)    { return p.points[0]; }
 	static auto make_internal(const Line& p)     { return line<float>{ p.points[0], p.points[1] }; }
@@ -93,9 +98,10 @@ public:
 	static auto make_internal(const Circle& p)   { return circle<float>{ p.points[0], (p.points[1]-p.points[0]).mag() }; }
 	static auto make_internal(const Triangle& p) { return triangle<float>{ p.points[0], p.points[1], p.points[2] }; }
 	static auto make_internal(const Ray& p)      { return ray<float>{ p.points[0], (p.points[1]-p.points[0]).norm() }; }
+	static auto make_internal(const Polygon& p)  { return polygon<float>{ p.points }; }
 
 	// The clever bit (and a bit new to me - jx9)
-	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray>;
+	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray, Polygon>;
 
 	
 

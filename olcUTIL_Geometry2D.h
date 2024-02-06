@@ -2565,7 +2565,8 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool overlaps(const polygon<T>& poly, const triangle<T>& t)
 	{
-		return false;
+		std::vector<olc::v_2d<T>> triVerts{t.pos.begin(), t.pos.end()};
+		return internal::overlaps(poly.pos, triVerts) && internal::overlaps(triVerts, poly.pos);
 	}
 
 	// overlaps(p,poly)

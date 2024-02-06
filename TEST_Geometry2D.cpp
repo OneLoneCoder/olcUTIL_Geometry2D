@@ -255,12 +255,12 @@ public:
 		vecShapes.push_back({ Line{ { { 80.0f, 10.0f }, {10.0f, 20.0f} } } });
 
 		vecShapes.push_back({ Rect{ { { 80.0f, 10.0f }, {110.0f, 60.0f} } } });
+		vecShapes.push_back({ Rect{ { { 80.0f, 10.0f }, {200.0f, 150.0f} } }});
 
 		vecShapes.push_back({ Circle{ { { 130.0f, 20.0f }, {170.0f, 20.0f} } } });
 		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {420.0f, 300.0f} } } });
 		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {400.0f, 300.0f} } } });
 
-		// Potential merge conflict, changed winding of triangle vertices from counter clockwise to clockwise
 		vecShapes.push_back({ Triangle{{ {50.0f, 100.0f}, {90.0f, 150.0f}, {10.0f, 150.0f}} }});
 		vecShapes.push_back({ Triangle{{ {350.0f, 200.0f}, {500.0f, 150.0f}, {450.0f, 400.0f}} }});
 

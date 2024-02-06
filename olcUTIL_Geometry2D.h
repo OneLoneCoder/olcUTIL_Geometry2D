@@ -2711,7 +2711,8 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool contains(const rect<T>& r, const polygon<T>& poly)
 	{
-		return false;
+		std::vector<olc::v_2d<T>> rectVerts{r.pos, {r.pos.x + r.size.x, r.pos.y}, r.pos + r.size, {r.pos.x, r.pos.y + r.size.y}};
+		return internal::contains(rectVerts, poly.pos);
 	}
 
 	// contains(c,poly)

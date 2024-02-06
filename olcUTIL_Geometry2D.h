@@ -2728,7 +2728,8 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool contains(const triangle<T>& t, const polygon<T>& poly)
 	{
-		return false;
+		std::vector<olc::v_2d<T>> triVerts{t.pos.begin(), t.pos.end()};
+		return internal::contains(triVerts, poly.pos);
 	}
 
 	// intersects(poly,poly)

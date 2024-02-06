@@ -563,6 +563,25 @@ namespace olc::utils::geom2d
 
 			return true;
 		}
+
+		template <typename T>
+		bool contains(const std::vector<v_2d<T>>& a, const std::vector<v_2d<T>>& b)
+		{
+			for(uint32_t i = 0; i < a.size(); ++i)
+			{
+				uint32_t next = (i + 1) % a.size();
+				olc::v_2d<T> edge = a[next] - a[i];
+				olc::v_2d<T> normal = -edge.perp();
+
+				for(uint32_t j = 0; j < b.size(); ++j)
+				{
+					if(normal.dot(b[j] - a[i]) > 0)
+						return false;
+				}
+			}
+
+			return true;
+		}
 	};
 
 	//https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
@@ -2615,7 +2634,7 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool contains(const polygon<T>& poly1, const polygon<T>& poly2)
 	{
-		return false;
+		return internal::contains(poly1.pos, poly2.pos);
 	}
 
 	// contains(poly,p)

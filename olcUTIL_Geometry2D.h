@@ -2560,7 +2560,8 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool overlaps(const polygon<T>& poly, const line<T>& l)
 	{
-		return false;
+		std::vector<olc::v_2d<T>> lineVerts{l.start, l.end};
+		return internal::overlaps(poly.pos, lineVerts) && internal::overlaps(lineVerts, poly.pos);
 	}
 
 	// overlaps(poly,r)

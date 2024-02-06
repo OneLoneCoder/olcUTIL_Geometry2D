@@ -2603,7 +2603,7 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool overlaps(const line<T>& l, const polygon<T>& poly)
 	{
-		return false;
+		return overlaps(poly, l);
 	}
 
 	// overlaps(r,poly)

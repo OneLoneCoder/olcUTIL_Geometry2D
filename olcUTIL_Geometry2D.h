@@ -952,8 +952,7 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const circle<T1>& c1, const circle<T2>& c2)
 	{
-		const auto dirVec = c2.pos - c1.pos;
-		return c1.pos + c1.radius * dirVec.norm();
+		return closest(c1, c2.pos);
 	}
 
 	// closest(t,c)

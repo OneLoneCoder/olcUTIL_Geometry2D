@@ -1178,6 +1178,20 @@ namespace olc::utils::geom2d
 	// constrain(shape, point) ===================================================================================================
 
 	template<typename T1, typename T2>
+	inline olc::v_2d<T2> constrain(const line<T1>& l, const olc::v_2d<T2>& p)
+	{
+		if (contains(l, p))
+		{
+			// The point is already on the line, no need to constrain
+			return p;
+		}
+		else {
+			// Constrain the point to the closest position on the line
+			return closest(l, p);
+		}
+	}
+
+	template<typename T1, typename T2>
 	inline olc::v_2d<T2> constrain(const circle<T1>& c, const olc::v_2d<T2>& p)
 	{
 		if (contains(c, p))

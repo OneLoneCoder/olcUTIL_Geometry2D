@@ -2457,7 +2457,8 @@ namespace olc::utils::geom2d
 			if (s2 < 0)
 				return { q.origin + q.direction * s1 };
 
-			return { q.origin + q.direction * std::min(s1, s2) };
+         const auto minmax = std::minmax(s1, s2);
+			return { q.origin + q.direction * minmax.first, q.origin + q.direction * minmax.second };
 		}
 	}
 

@@ -191,7 +191,6 @@
 #include <optional>
 #include <cassert>
 #include <array>
-#include <iostream>
 
 #ifndef OLC_V2D_TYPE
 #define OLC_V2D_TYPE

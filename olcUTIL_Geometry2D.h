@@ -508,10 +508,10 @@ namespace olc
 namespace olc::utils::geom2d
 {
 	// Lemon Meringue
-	inline const double pi = 3.141592653589793238462643383279502884;
+	inline constexpr double pi = 3.141592653589793238462643383279502884;
 
 	// Floating point error margin
-	inline const double epsilon = 0.001;
+	inline constexpr double epsilon = 0.001;
 
 	namespace internal
 	{

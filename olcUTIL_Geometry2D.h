@@ -164,7 +164,7 @@
              | closest      | closest      |              |              |              |              |
              | overlaps     | overlaps     | overlaps     | overlaps     | overlaps     |              |
              | intersects   | intersects   | intersects   | intersects   | intersects   |              |
-             | project      | project      |              | project      |              |              |
+             | project      | project      | project      | project      | project      |              |
     ---------+--------------+--------------+--------------+--------------+--------------+--------------+
     TRIANGLE | contains     | contains     | contains     | contains     | contains     |              |
              | closest      |              |              |              |              |              |
@@ -2184,8 +2184,35 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2, typename T3>
 	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const triangle<T2>& t, const ray<T3>& q)
 	{
-		// TODO:
-		return std::nullopt;
+		const auto s1 = project(c, t.side(0), q);
+		const auto s2 = project(c, t.side(1), q);
+		const auto s3 = project(c, t.side(2), q);
+
+		std::vector<olc::v_2d<T2>> vAllIntersections;
+		if (s1.has_value()) vAllIntersections.push_back(s1.value());
+		if (s2.has_value()) vAllIntersections.push_back(s2.value());
+		if (s3.has_value()) vAllIntersections.push_back(s3.value());
+
+		if (vAllIntersections.size() == 0)
+		{
+			// No intersections at all, so
+			return std::nullopt;
+		}
+
+		// Find closest
+		double dClosest = std::numeric_limits<double>::max();
+		olc::v_2d<T2> vClosest;
+		for (const auto& vContact : vAllIntersections)
+		{
+			double dDistance = (vContact - q.origin).mag2();
+			if (dDistance < dClosest)
+			{
+				dClosest = dDistance;
+				vClosest = vContact;
+			}
+		}
+
+		return vClosest;
 	}
 
 
@@ -2457,10 +2484,11 @@ namespace olc::utils::geom2d
 			if (s2 < 0)
 				return { q.origin + q.direction * s1 };
 
-			return { q.origin + q.direction * std::min(s1, s2) };
+			const auto& [min_dist, max_dist] = std::minmax(s1, s2);
+			return { q.origin + q.direction * min_dist, q.origin + q.direction * max_dist };
 		}
 	}
-
+	
 	// intersects(q,r)
 	// Get intersection points where a ray intersects a rectangle
 	template<typename T1, typename T2>

@@ -8,6 +8,7 @@
 #include "third_party/olcPGEX_QuickGUI.h"
 
 #include <variant>
+#include <optional>
 
 
 using namespace olc::utils::geom2d;
@@ -154,6 +155,29 @@ public:
 		};
 
 		return std::visit(dispatch, s1, s2);
+	}
+
+	std::optional<olc::v_2d<float>> CheckProject(const ShapeWrap& s1, const ShapeWrap& s2, const ShapeWrap& s3)
+	{
+		const auto dispatch = overloads{
+			
+			[](const auto& s1, const auto& s2, const auto& s3)
+			{
+				return std::optional<olc::v_2d<float>>{};
+			},
+
+			[](const Circle& s1, const Rect& s2, const Ray& s3)
+			{
+				return project(make_internal(s1), make_internal(s2), make_internal(s3));
+			},
+
+			[](const Circle& s1, const Triangle& s2, const Ray& s3)
+			{
+				return project(make_internal(s1), make_internal(s2), make_internal(s3));
+			}
+		};
+
+		return std::visit(dispatch, s1, s2, s3);
 	}
 
 	std::optional<ray<float>> CheckReflect(const olc::utils::geom2d::ray<float>& s1, const ShapeWrap& s2)
@@ -319,6 +343,9 @@ public:
 
 
 		bool bRayMode = false;
+		std::vector<std::optional<olc::v_2d<float>>> projected_circle_left_ray;
+		std::vector<std::optional<olc::v_2d<float>>> projected_circle_right_ray;
+
 		if (GetMouse(1).bHeld)
 		{
 			// Enable Ray Mode
@@ -344,6 +371,15 @@ public:
 			vIntersections.insert(vIntersections.end(), vPoints3.begin(), vPoints3.end());
 			
 
+			for (const auto& shape : vecShapes)
+			{
+				if(std::holds_alternative<Rect>(shape) || std::holds_alternative<Triangle>(shape))
+				{
+					projected_circle_left_ray.push_back(CheckProject(Circle{ { { 130.0f, 20.0f }, {150.0f, 20.0f} } }, shape, ray1));
+					projected_circle_right_ray.push_back(CheckProject(Circle{ { { 130.0f, 20.0f }, {150.0f, 20.0f} } }, shape, ray2));
+				}
+			}
+			
 		}
 
 		// Draw All Shapes
@@ -373,6 +409,22 @@ public:
 		{
 			DrawShape(ray1, olc::CYAN); 
 			DrawShape(ray2, olc::CYAN);
+
+			for(const auto& projection : projected_circle_left_ray)
+			{
+				if (projection.has_value())
+				{
+					DrawCircle(projection.value(), 20.0f, olc::CYAN);
+				}
+			}
+			
+			for (const auto& projection : projected_circle_right_ray)
+			{
+				if (projection.has_value())
+				{
+					DrawCircle(projection.value(), 20.0f, olc::RED);
+				}
+			}
 		}
 
 		// Laser beam		

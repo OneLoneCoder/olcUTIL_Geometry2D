@@ -98,7 +98,10 @@ public:
 	// The clever bit (and a bit new to me - jx9)
 	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray>;
 
-	
+	enum Mode
+	{
+		CircleProject, LineProject, NoProject
+	};
 
 	bool CheckOverlaps(const ShapeWrap& s1, const ShapeWrap& s2)
 	{
@@ -174,11 +177,18 @@ public:
 			[](const Circle& s1, const Triangle& s2, const Ray& s3)
 			{
 				return project(make_internal(s1), make_internal(s2), make_internal(s3));
+			},
+
+			[](const Line& s1, const Circle& s2, const Ray& s3)
+			{
+				return project(make_internal(s1), make_internal(s2), make_internal(s3));
 			}
+
 		};
 
 		return std::visit(dispatch, s1, s2, s3);
 	}
+
 
 	std::optional<ray<float>> CheckReflect(const olc::utils::geom2d::ray<float>& s1, const ShapeWrap& s2)
 	{
@@ -252,6 +262,7 @@ public:
 
 	size_t nSelectedShapeIndex = -1;
 	olc::vi2d vOldMousePos;
+	Mode mode = Mode::NoProject;
 
 public: 
 	bool OnUserCreate() override
@@ -282,6 +293,10 @@ public:
 
 		if (GetMouse(0).bReleased)
 			nSelectedShapeIndex = -1;
+
+		if (GetKey(olc::Key::C).bPressed) mode = Mode::CircleProject;
+		if (GetKey(olc::Key::L).bPressed) mode = Mode::LineProject;
+		if (GetKey(olc::Key::N).bPressed) mode = Mode::NoProject;
 
 		// Check for mouse hovered shapes
 		ShapeWrap mouse{ Point{olc::vf2d(GetMousePos())} };
@@ -345,6 +360,10 @@ public:
 		bool bRayMode = false;
 		std::vector<std::optional<olc::v_2d<float>>> projected_circle_left_ray;
 		std::vector<std::optional<olc::v_2d<float>>> projected_circle_right_ray;
+		std::vector<std::optional<olc::v_2d<float>>> projected_line_left_ray;
+		std::vector<std::optional<olc::v_2d<float>>> projected_line_right_ray;
+		const Line line_to_project{ { { 100.0f, 100.0f }, {140.0f, 70.0f} } };
+
 
 		if (GetMouse(1).bHeld)
 		{
@@ -373,10 +392,16 @@ public:
 
 			for (const auto& shape : vecShapes)
 			{
-				if(std::holds_alternative<Rect>(shape) || std::holds_alternative<Triangle>(shape))
+				if(mode == Mode::CircleProject && (std::holds_alternative<Rect>(shape) || std::holds_alternative<Triangle>(shape)))
 				{
 					projected_circle_left_ray.push_back(CheckProject(Circle{ { { 130.0f, 20.0f }, {150.0f, 20.0f} } }, shape, ray1));
 					projected_circle_right_ray.push_back(CheckProject(Circle{ { { 130.0f, 20.0f }, {150.0f, 20.0f} } }, shape, ray2));
+				}
+
+				if (mode == Mode::LineProject && (std::holds_alternative<Circle>(shape)))
+				{
+					projected_line_left_ray.push_back(CheckProject(line_to_project, shape, ray1));
+					projected_line_right_ray.push_back(CheckProject(line_to_project, shape, ray2));
 				}
 			}
 			
@@ -412,7 +437,7 @@ public:
 
 			for(const auto& projection : projected_circle_left_ray)
 			{
-				if (projection.has_value())
+				if (mode == Mode::CircleProject && projection.has_value())
 				{
 					DrawCircle(projection.value(), 20.0f, olc::CYAN);
 				}
@@ -420,9 +445,35 @@ public:
 			
 			for (const auto& projection : projected_circle_right_ray)
 			{
-				if (projection.has_value())
+				if (mode == Mode::CircleProject && projection.has_value())
 				{
 					DrawCircle(projection.value(), 20.0f, olc::RED);
+				}
+			}
+
+			for (const auto& projection : projected_line_left_ray)
+			{
+				if (mode == Mode::LineProject && projection.has_value())
+				{
+					const auto& vec = make_internal(line_to_project).vector().norm();
+					const auto& half_length = 0.5 * make_internal(line_to_project).vector().mag();
+					const olc::vf2d start = projection.value() - vec * half_length;
+					const olc::vf2d end = projection.value() + vec * half_length;
+					Line line_to_draw{ {{start}, {end}} };
+					DrawShape(line_to_draw, olc::CYAN);
+				}
+			}
+
+			for (const auto& projection : projected_line_right_ray)
+			{
+				if (mode == Mode::LineProject && projection.has_value())
+				{
+					const auto& vec = make_internal(line_to_project).vector().norm();
+					const auto& half_length = 0.5 * make_internal(line_to_project).vector().mag();
+					const olc::vf2d start = projection.value() - vec * half_length;
+					const olc::vf2d end = projection.value() + vec * half_length;
+					Line line_to_draw{ {{start}, {end}} };
+					DrawShape(line_to_draw, olc::RED);
 				}
 			}
 		}

@@ -1560,7 +1560,7 @@ namespace olc::utils::geom2d
 			if (D > 0)
 			{
 				const double s1 = (-2 * rx * (x1 - a) - 2 * ry * (y1 - b) + std::sqrt(D)) / (2 * (rx * rx + ry * ry));
-				const double s2 = (-2 * rx * (x1 - a) - 2 * ry * (y1 - b) - std::sqrt(D)) / (2 * (rx * rx + ry * ry))
+				const double s2 = (-2 * rx * (x1 - a) - 2 * ry * (y1 - b) - std::sqrt(D)) / (2 * (rx * rx + ry * ry));
 				
 				const olc::v_2d<T1> p1{ tangent_intersection_point + s1 * q.direction };
 				const olc::v_2d<T1> p2{ tangent_intersection_point + s2 * q.direction };

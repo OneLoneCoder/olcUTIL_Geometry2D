@@ -160,7 +160,7 @@ public:
 		return std::visit(dispatch, s1, s2);
 	}
 
-	std::optional<olc::v_2d<float>> CheckProject(const ShapeWrap& s1, const ShapeWrap& s2, const ShapeWrap& s3)
+	std::optional<olc::v_2d<float>> CheckProject(const ShapeWrap& s1, const ShapeWrap& s2, const ShapeWrap& s3, const double& end_length = 0.5)
 	{
 		const auto dispatch = overloads{
 			
@@ -179,10 +179,10 @@ public:
 				return project(make_internal(s1), make_internal(s2), make_internal(s3));
 			},
 
-			[](const Line& s1, const Circle& s2, const Ray& s3)
+			[&](const Line& s1, const Circle& s2, const Ray& s3)
 			{
-				return project(make_internal(s1), make_internal(s2), make_internal(s3));
-			}
+				return project(make_internal(s1), make_internal(s2), make_internal(s3), end_length);
+			}, 
 
 		};
 
@@ -361,8 +361,9 @@ public:
 		std::vector<std::optional<olc::v_2d<float>>> projected_circle_left_ray;
 		std::vector<std::optional<olc::v_2d<float>>> projected_circle_right_ray;
 		std::vector<std::optional<olc::v_2d<float>>> projected_line_left_ray;
+		const double left_line_end_length = 0.1;
 		std::vector<std::optional<olc::v_2d<float>>> projected_line_right_ray;
-		const Line line_to_project{ { { 100.0f, 100.0f }, {140.0f, 70.0f} } };
+		const Line line_to_project{ { { 100.0f, 100.0f }, {130.0f, 150.0f} } };
 
 
 		if (GetMouse(1).bHeld)
@@ -400,7 +401,7 @@ public:
 
 				if (mode == Mode::LineProject && (std::holds_alternative<Circle>(shape)))
 				{
-					projected_line_left_ray.push_back(CheckProject(line_to_project, shape, ray1));
+					projected_line_left_ray.push_back(CheckProject(line_to_project, shape, ray1, left_line_end_length));
 					projected_line_right_ray.push_back(CheckProject(line_to_project, shape, ray2));
 				}
 			}
@@ -456,9 +457,10 @@ public:
 				if (mode == Mode::LineProject && projection.has_value())
 				{
 					const auto& vec = make_internal(line_to_project).vector().norm();
-					const auto& half_length = 0.5 * make_internal(line_to_project).vector().mag();
-					const olc::vf2d start = projection.value() - vec * half_length;
-					const olc::vf2d end = projection.value() + vec * half_length;
+					const auto& end_length = left_line_end_length * make_internal(line_to_project).vector().mag();
+					const auto& start_length = (left_line_end_length - 1) * make_internal(line_to_project).vector().mag();
+					const olc::vf2d start = projection.value() + vec * end_length;
+					const olc::vf2d end = projection.value() + vec * start_length;
 					Line line_to_draw{ {{start}, {end}} };
 					DrawShape(line_to_draw, olc::CYAN);
 				}

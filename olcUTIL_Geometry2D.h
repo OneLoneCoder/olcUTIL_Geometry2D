@@ -1409,7 +1409,7 @@ namespace olc::utils::geom2d
 	// project(t,c)
 	// project a line, onto a circle, via a ray (i.e. how far along the ray can the line travel until it contacts the circle?)
 	template<typename T1, typename T2, typename T3>
-	inline std::optional<olc::v_2d<T1>> project(const line<T1>& l, const circle<T2>& c, const ray<T3>& q)
+	inline std::optional<olc::v_2d<T1>> project(const line<T1>& l, const circle<T2>& c, const ray<T3>& q, const double& end_length=0.5)
 	{
 		// The ray intersects the line in the midpoint at all times
 		// The function returns a projected midpoint
@@ -1420,80 +1420,167 @@ namespace olc::utils::geom2d
 		auto [rx, ry] = q.direction;
 		const auto& [ox, oy] = q.origin;
 		const auto& [slope, intercept] = l.coefficients();
-		const auto& length = l.vector().mag();
+		
+		bool is_vertical = false;
+		bool is_horizontal = false;
 
-		// First, we find two points on the cirlce that correspond to the tangent of the same slope
-		// as the given line
-		const double y_t1 = r / std::sqrt(slope * slope + 1) + b;
-		const double y_t2 = - r / std::sqrt(slope * slope + 1) + b;
-		std::vector<olc::v_2d<double>> tangent_points{ { {a - (y_t1 - b) * slope, y_t1}, {a - (y_t2 - b) * slope, y_t2} } };
+		if (slope == 0) is_horizontal = true;
+		if (slope == std::numeric_limits<double>::infinity()) is_vertical = true;
+
+		const auto& length = l.vector().mag();
+		const auto& vec = l.vector().norm();
+		const auto& start_length = end_length - 1;
+
+		// First, we find two points on the cirlce that correspond to
+		// the tangent of the same as the given line
+		std::vector<olc::v_2d<double>> tangent_points;
+		if (is_vertical)
+		{
+			const double y_t1 = b, y_t2 = b;
+			tangent_points.assign({{a - r, y_t1},{a + r, y_t2}});
+		}
+		else if (is_horizontal)
+		{
+			const double x_t1 = a, x_t2 = a;
+			tangent_points.assign({ {x_t1, b + r},{x_t2, b - r} });
+		}
+		else
+		{
+			const double y_t1 = r / std::sqrt(slope * slope + 1) + b;
+			const double y_t2 = -r / std::sqrt(slope * slope + 1) + b;
+			tangent_points.assign({ {a - (y_t1 - b) * slope, y_t1}, {a - (y_t2 - b) * slope, y_t2} });
+		}
 		
 		// Check if the ray intersects the tangent line along its way and not from behind
-		const auto& v = (tangent_points[0] - q.origin).norm();
-		if (v.dot(q.direction) < 0) return{};
+		if ((tangent_points[0] - q.origin).norm().dot(q.direction) < 0) return{};
 
-		// The line is first being projected onto both tangent lines, the tangent point and the intersections between the ray and
-		// the tangent line are stored as well 
+		// If the ray is parallel to both tangent lines - special case
+		if ((is_vertical && std::abs(rx) < epsilon) ||
+			(is_horizontal && std::abs(ry) < epsilon) ||
+			std::abs(slope - ry / rx) < epsilon)
+		{
+			// The line is going through the origin of the ray
+			const std::vector<std::pair<olc::v_2d<double>, double>> sides{ 
+				{{q.origin + vec * end_length * length}, end_length},
+				{{q.origin + vec * start_length * length}, start_length} };
+
+			const auto& closest = *std::min_element(sides.begin(), sides.end(),
+				[&c](const auto& lhs, const auto& rhs) 
+				{
+					return (lhs.first - c.pos).mag2() < (rhs.first - c.pos).mag2();
+				});
+
+			// The closest end of the line is transported onto the circle,
+			// Return value is determined via the length of that side
+			const auto& intersections = intersects(q, c);
+			if (!intersections.empty()) return intersections[0] - closest.second * length * vec;
+			return {};
+		}
+
+		// The line is first being projected onto both tangent lines, 
+		// the tangent point and the intersections between the and the tangent line are stored as well 
 		std::vector<std::pair<olc::v_2d<double>, std::pair<olc::v_2d<double>, olc::v_2d<double>>>> side_points;
 		std::vector<olc::v_2d<T1>> possible_points;
 
 		for (const auto& tangent_point : tangent_points)
 		{	
-			const auto& [xt, yt] = tangent_point;
-			const double xl = (ry / rx * ox - xt * slope + yt - oy) / (ry / rx - slope);
-			const double yl = (xl - xt) * slope + yt;
-			// Creating two points on a tangent line that correspond to the start and the end of a projected line  
-			const double x_side_1 = xl - 0.5 * length * l.vector().norm().x;
-			const double x_side_2 = xl + 0.5 * length * l.vector().norm().x;
-			const double y_side_1 = (x_side_1 - xl) * slope + yl;
-			const double y_side_2 = (x_side_2 - xl) * slope + yl;
+			std::vector<std::pair<olc::v_2d<double>, double>> possible_closest_side;
 
-			side_points.push_back({ {x_side_1, y_side_1}, {{xl, yl}, {xt, yt}} });
-			side_points.push_back({ {x_side_2, y_side_2}, {{xl, yl}, {xt, yt}} });
+			double xl;
+			double yl;
+
+			const auto& [xt, yt] = tangent_point;
+			if (is_vertical)
+			{
+				xl = xt;
+				yl = (xl - ox) * (ry / rx) + oy;
+			}
+			else if (is_horizontal)
+			{
+				yl = yt;
+				xl = (yl - oy) * (rx / ry) + ox;
+			}
+			else
+			{
+				xl = (ry / rx * ox - xt * slope + yt - oy) / (ry / rx - slope);
+				yl = (xl - xt) * slope + yt;
+			}
+			const v_2d<double> intersection_point{xl, yl};
+			// Creating two points on a tangent line that correspond to 
+			// the start and the end of a projected line  
+
+			const double x_side_end = xl + end_length * length * vec.x;
+			const double y_side_end = yl + end_length * length * vec.y;
+			const double x_side_start = xl + start_length * length * vec.x;
+			const double y_side_start = yl + start_length * length * vec.y;
+
+			possible_closest_side.push_back({ { x_side_end, y_side_end }, std::abs(end_length * length) });
+			possible_closest_side.push_back({ { x_side_start, y_side_start }, std::abs(start_length * length) });
+
+			const auto& closest_side_to_tangent = *std::min_element(possible_closest_side.begin(), possible_closest_side.end(),
+				[&tangent_point, &intersection_point](const auto& lhs, const auto& rhs) 
+				{
+					return (lhs.first - intersection_point).dot(tangent_point - intersection_point) >
+							(rhs.first - intersection_point).dot(tangent_point - intersection_point);
+				});
+
+			// Only add a tangent-ray intersection point if the distance between
+			// it and the tangent point is less than or equal the length of side. 
+			// It means the line can lie on the tangent
+			if ((tangent_point - intersection_point).mag() <= closest_side_to_tangent.second) 
+				possible_points.push_back(intersection_point);
+
+			side_points.push_back({ {x_side_end, y_side_end}, {{xl, yl}, {xt, yt}} });
+			side_points.push_back({ {x_side_start, y_side_start}, {{xl, yl}, {xt, yt}} });
+
 		}
 
 
-		for (const auto& [side_point, pair] : side_points)
+		for (const auto& [side_point, pair_intersection_tangent] : side_points)
 		{
 			const auto& [x1, y1] = side_point;
-			const auto& tangent_intersection_point = pair.first;
-			const auto& tangent_point = pair.second;
+			const auto& tangent_intersection_point = pair_intersection_tangent.first;
+			const auto& tangent_point = pair_intersection_tangent.second;
 
-			// We search for a scalar s such that:
-			// x_new = x_side + s * rx
-			// y_new = y_side + s * ry
-			// (x_new - a)^2 + (y_new - b)^2 = r^2
-			//
-			// Where (x_new, y_new) is a point on the circle that is obtained by transporting a line projected onto the
-			// tangent via a ray q
-			//
-			// For each tangent line and for each side of the line being transported, there can be up to 4 transported lines
+			/* We search for a scalar s such that:
+			   x_new = x_side + s * rx
+			   y_new = y_side + s * ry
+			   (x_new - a)^2 + (y_new - b)^2 = r^2
+			   
+			   Where (x_new, y_new) is a point on the circle that is
+			   obtained by transporting a line projected onto tangent via a ray q
+			   
+			    In a regular (non-parallel to the tangent, non-vertical or horizontal) situation,
+				There will be up to 4 possible lines projected onto the circle.
+				Each end point of the line can be projected so that the line is either outside the circle
+				or, respectively, inside */
 			
 			const double D = (2 * rx * (x1 - a) + 2 * ry * (y1 - b)) * (2 * rx * (x1 - a) + 2 * ry * (y1 - b)) -
 						4 * (rx * rx + ry * ry) * ((x1 - a) * (x1 - a) + (y1 - b) * (y1 - b) - r * r);
 			if (D > 0)
 			{
 				const double s1 = (-2 * rx * (x1 - a) - 2 * ry * (y1 - b) + std::sqrt(D)) / (2 * (rx * rx + ry * ry));
-				const double s2 = (-2 * rx * (x1 - a) - 2 * ry * (y1 - b) - std::sqrt(D)) / (2 * (rx * rx + ry * ry));
+				const double s2 = (-2 * rx * (x1 - a) - 2 * ry * (y1 - b) - std::sqrt(D)) / (2 * (rx * rx + ry * ry))
+				
 				const olc::v_2d<T1> p1{ tangent_intersection_point + s1 * q.direction };
 				const olc::v_2d<T1> p2{ tangent_intersection_point + s2 * q.direction };
-				// Only add a point is it is not inside the circle
-				!contains(c, p1) ? possible_points.push_back(p1) : (void)0;
-				!contains(c, p2) ? possible_points.push_back(p2) : (void)0;
-				// Only add a tangent-ray intersection point if the distance between it and the tangent point is less than of equal 
-				// half length of the line. It means the line can lie on the tangent
-				(tangent_intersection_point - tangent_point).mag() <= 0.5 * length ? possible_points.push_back(tangent_intersection_point) : (void)0;
+
+				possible_points.push_back(p1);
+				possible_points.push_back(p2);
 			}
 			else if (D == 0)
 			{
 				const double s = (-2 * rx * (x1 - a) - 2 * ry * (y1 - b)) / (2 * (rx * rx + ry * ry));
 				const olc::v_2d<T1> p{ tangent_intersection_point + s * q.direction };
-				!contains(c, p) ? possible_points.push_back(p): (void)0;
+
+				possible_points.push_back(p);
 			}
 		}
 
 		if (possible_points.empty()) return {};
 		
+		
+
 		// Compare by the distance to the origin
 		return *std::min_element(possible_points.begin(), possible_points.end(),
 			[&q](const auto& lhs, const auto& rhs)

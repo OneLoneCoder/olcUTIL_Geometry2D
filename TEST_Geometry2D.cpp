@@ -386,7 +386,7 @@ public:
 		std::vector<std::optional<triangle<float>>> projected_triangle_left_ray;
 		std::vector<std::optional<triangle<float>>> projected_triangle_right_ray;
 		const Line line_to_project{ { { 100.0f, 100.0f }, {130.0f, 100.0f} } };
-		const Triangle triangle_to_project{ { {50.0f, 100.0f}, {10.0f, 150.0f}, {90.0f, 150.0f}} };
+		const Triangle triangle_to_project{ { {65.0f, 107.0f}, {18.0f, 100.0f}, {80.0f, 170.0f}} };
 
 
 		if (GetMouse(1).bHeld)

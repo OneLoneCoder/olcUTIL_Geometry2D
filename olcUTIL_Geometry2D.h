@@ -1406,39 +1406,7 @@ namespace olc::utils::geom2d
 	}
 
 
-	// project(l,c)
-	// project a line, onto a circle, via a ray (i.e. how far along the ray can the line travel until it contacts the circle?)
-	template<typename T1, typename T2, typename T3>
-	inline std::optional<olc::v_2d<T1>> project(const line<T1>& l, const circle<T2>& c, const ray<T3>& q, const double& end_length=0.5)
-	{
-		// The ray intersects the line in the point p 
-		// |------p--------------|
-		// ^				     ^
-		// |				     |
-		// start			     end
-		//		  |<-end length->|		
-		// The function returns a projected point
-
-		if (contains(c, q.origin)) return std::nullopt;
-
-		const auto& length = l.vector().mag();
-		const auto& vec = l.vector().norm();
-		const auto& start_length = end_length - 1;
-
-		// Projecting the circle on the line that is going through the origin of the ray
-		const line<T1> line_on_the_origin{ q.origin + end_length * length * vec, q.origin + start_length * length * vec};
-		const ray<T3> q_reverse{ c.pos, -q.direction };
-
-		const auto& circle_on_line = project(c, line_on_the_origin, q_reverse);
-
-		if (!circle_on_line.has_value()) return std::nullopt;
-
-		const double distance = (circle_on_line.value() - c.pos).mag();
-
-		// Move the projection back so that the centre of the circle is in it's original position
-		return q.origin + distance * q.direction;
-
-	}
+	
 
 
 	// ================================================================================================================
@@ -1949,40 +1917,6 @@ namespace olc::utils::geom2d
 		return internal::filter_duplicate_points(intersections);
 	}
 
-	// project(t,c)
-	// project a triangle, onto a circle, via a ray (i.e. how far along the ray can the triangle travel until it contacts the circle?)
-	template<typename T1, typename T2, typename T3>
-	inline std::optional<triangle<T1>> project(const triangle<T1>& t, const circle<T2>& c, const ray<T3> q)
-	{
-		// The ray is going through the point of median inersections
-
-		if (contains(c, q.origin)) return std::nullopt;
-
-		const auto side_0_mid = t.side(0).rpoint(0.5 * t.side(0).length());
-		const auto side_1_mid = t.side(1).rpoint(0.5 * t.side(1).length());
-
-		const auto& median_point = intersects(line<T1>{side_0_mid, t.pos[2]}, line<T1>{side_1_mid, t.pos[0]});
-		if (median_point.empty()) return std::nullopt;
-
-		const auto displace = (q.origin - median_point[0]);
-		const triangle<T1> triangle_on_the_origin{t.pos[0] + displace, t.pos[1] + displace, t.pos[2] + displace};
-
-		// Projecting the circle on the line that is going through the origin of the ray
-		const ray<T3> q_reverse{ c.pos, -q.direction };
-
-		const auto& circle_on_triangle = project(c, triangle_on_the_origin, q_reverse);
-
-		if (!circle_on_triangle.has_value()) return std::nullopt;
-
-		const double distance = (circle_on_triangle.value() - c.pos).mag();
-
-		const triangle<T1> projected{ triangle_on_the_origin.pos[0] + distance * q.direction.norm(),
-									triangle_on_the_origin.pos[1] + distance * q.direction.norm(),
-									triangle_on_the_origin.pos[2] + distance * q.direction.norm() };
-
-		// Move the projection back so that the centre of the circle is in it's original position
-		return projected;
-	}
 
 
 	// envelope_c(c)
@@ -2161,8 +2095,9 @@ namespace olc::utils::geom2d
 	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const line<T2>& l, const ray<T3>& q)
 	{
 
-		// There should be no projection if the shapes overlap 
-		if (overlaps(c, l)) return std::nullopt;
+		// There should be no projection if the shapes overlap
+		// (The circle) is positioned at the origin of the ray 
+		if (overlaps(circle<T1>{q.origin, c.radius}, l)) return std::nullopt;
 
 		// Treat line segment as capsule with radius that of the circle
 		// and treat the circle as a point
@@ -2206,7 +2141,8 @@ namespace olc::utils::geom2d
 	{
 
 		const auto& closest_to_origin = closest(r, q.origin);
-
+		// Since the projected circle lies ON the rectangle, the closest point
+		// is allowed to be on the rectangle, but not inside
 		if ((q.origin - closest_to_origin).mag() < c.radius) return std::nullopt;
 
 		const auto s1 = project(c, r.top(), q);
@@ -2242,7 +2178,6 @@ namespace olc::utils::geom2d
 	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const triangle<T2>& t, const ray<T3>& q)
 	{
 		const auto& closest_to_origin = closest(t, q.origin);
-
 		if ((q.origin - closest_to_origin).mag() < c.radius) return std::nullopt;
 
 		const auto s1 = project(c, t.side(0), q);
@@ -2268,6 +2203,76 @@ namespace olc::utils::geom2d
 			});
 
 		return vClosest;
+	}
+
+	// project(l,c)
+	// project a line, onto a circle, via a ray (i.e. how far along the ray can the line travel until it contacts the circle?)
+	template<typename T1, typename T2, typename T3>
+	inline std::optional<olc::v_2d<T1>> project(const line<T1>& l, const circle<T2>& c, const ray<T3>& q, const double& end_length = 0.5)
+	{
+		// The ray intersects the line in the point p 
+		// |------p--------------|
+		// ^				     ^
+		// |				     |
+		// start			     end
+		//		  |<-end length->|		
+		// The function returns a projected point
+
+		if (contains(c, q.origin)) return std::nullopt;
+
+		const auto& length = l.vector().mag();
+		const auto& vec = l.vector().norm();
+		const auto& start_length = end_length - 1;
+
+		// Projecting the circle on the line that is going through the origin of the ray
+		const line<T1> line_on_the_origin{ q.origin + end_length * length * vec, q.origin + start_length * length * vec };
+		const ray<T3> q_reverse{ c.pos, -q.direction };
+
+		const auto& circle_on_line = project(c, line_on_the_origin, q_reverse);
+
+		if (!circle_on_line.has_value()) return std::nullopt;
+
+		const double distance = (circle_on_line.value() - c.pos).mag();
+
+		// Move the projection back so that the centre of the circle is in it's original position
+		return q.origin + distance * q.direction;
+
+	}
+
+
+	// project(t,c)
+	// project a triangle, onto a circle, via a ray (i.e. how far along the ray can the triangle travel until it contacts the circle?)
+	template<typename T1, typename T2, typename T3>
+	inline std::optional<triangle<T1>> project(const triangle<T1>& t, const circle<T2>& c, const ray<T3> q)
+	{
+		// The ray is going through the point of median inersections
+
+		if (contains(c, q.origin)) return std::nullopt;
+
+		const auto side_0_mid = t.side(0).rpoint(0.5 * t.side(0).length());
+		const auto side_1_mid = t.side(1).rpoint(0.5 * t.side(1).length());
+
+		const auto& median_point = intersects(line<T1>{side_0_mid, t.pos[2]}, line<T1>{side_1_mid, t.pos[0]});
+		if (median_point.empty()) return std::nullopt;
+
+		const auto displace = (q.origin - median_point[0]);
+		const triangle<T1> triangle_on_the_origin{ t.pos[0] + displace, t.pos[1] + displace, t.pos[2] + displace };
+
+		// Projecting the circle on the line that is going through the origin of the ray
+		const ray<T3> q_reverse{ c.pos, -q.direction };
+
+		const auto& circle_on_triangle = project(c, triangle_on_the_origin, q_reverse);
+
+		if (!circle_on_triangle.has_value()) return std::nullopt;
+
+		const double distance = (circle_on_triangle.value() - c.pos).mag();
+
+		const triangle<T1> projected{ triangle_on_the_origin.pos[0] + distance * q.direction.norm(),
+									triangle_on_the_origin.pos[1] + distance * q.direction.norm(),
+									triangle_on_the_origin.pos[2] + distance * q.direction.norm() };
+
+		// Move the projection back so that the centre of the circle is in it's original position
+		return projected;
 	}
 
 

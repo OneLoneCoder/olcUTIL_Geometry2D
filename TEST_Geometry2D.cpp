@@ -8,6 +8,7 @@
 #include "third_party/olcPGEX_QuickGUI.h"
 
 #include <variant>
+#include <optional>
 
 
 using namespace olc::utils::geom2d;
@@ -97,7 +98,10 @@ public:
 	// The clever bit (and a bit new to me - jx9)
 	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray>;
 
-	
+	enum Mode
+	{
+		CircleProject, LineProject, TriangleProject, NoProject
+	};
 
 	bool CheckOverlaps(const ShapeWrap& s1, const ShapeWrap& s2)
 	{
@@ -155,6 +159,55 @@ public:
 
 		return std::visit(dispatch, s1, s2);
 	}
+
+	std::optional<olc::v_2d<float>> CheckProject(const ShapeWrap& s1, const ShapeWrap& s2, const ShapeWrap& s3, 
+												 const double& end_length = 0.5)
+	{
+		const auto dispatch = overloads{
+			
+			[](const auto& s1, const auto& s2, const auto& s3)
+			{
+				return std::optional<olc::v_2d<float>>{};
+			},
+
+			[](const Circle& s1, const Rect& s2, const Ray& s3)
+			{
+				return project(make_internal(s1), make_internal(s2), make_internal(s3));
+			},
+
+			[](const Circle& s1, const Triangle& s2, const Ray& s3)
+			{
+				return project(make_internal(s1), make_internal(s2), make_internal(s3));
+			},
+
+			[&](const Line& s1, const Circle& s2, const Ray& s3)
+			{
+				return project(make_internal(s1), make_internal(s2), make_internal(s3), end_length);
+			}, 
+
+		};
+
+		return std::visit(dispatch, s1, s2, s3);
+	}
+
+	std::optional<triangle<float>> CheckProjectTriangle(const ShapeWrap& s1, const ShapeWrap& s2, const ShapeWrap& s3)
+	{
+		const auto dispatch = overloads{
+			
+			[](const auto& s1, const auto& s2, const auto& s3)
+			{
+				return std::optional<triangle<float>>{};
+			},
+
+			[](const Triangle& s1, const Circle& s2, const Ray& s3)
+			{
+				return project(make_internal(s1), make_internal(s2), make_internal(s3));
+			}
+		};
+		
+		return std::visit(dispatch, s1, s2, s3);
+	}
+
 
 	std::optional<ray<float>> CheckReflect(const olc::utils::geom2d::ray<float>& s1, const ShapeWrap& s2)
 	{
@@ -228,6 +281,7 @@ public:
 
 	size_t nSelectedShapeIndex = -1;
 	olc::vi2d vOldMousePos;
+	Mode mode = Mode::NoProject;
 
 public: 
 	bool OnUserCreate() override
@@ -258,6 +312,11 @@ public:
 
 		if (GetMouse(0).bReleased)
 			nSelectedShapeIndex = -1;
+
+		if (GetKey(olc::Key::C).bPressed) mode = Mode::CircleProject;
+		if (GetKey(olc::Key::L).bPressed) mode = Mode::LineProject;
+		if (GetKey(olc::Key::T).bPressed) mode = Mode::TriangleProject;
+		if (GetKey(olc::Key::N).bPressed) mode = Mode::NoProject;
 
 		// Check for mouse hovered shapes
 		ShapeWrap mouse{ Point{olc::vf2d(GetMousePos())} };
@@ -319,6 +378,17 @@ public:
 
 
 		bool bRayMode = false;
+		std::vector<std::optional<olc::v_2d<float>>> projected_circle_left_ray;
+		std::vector<std::optional<olc::v_2d<float>>> projected_circle_right_ray;
+		std::vector<std::optional<olc::v_2d<float>>> projected_line_left_ray;
+		const double left_line_end_length = 0.1;
+		std::vector<std::optional<olc::v_2d<float>>> projected_line_right_ray;
+		std::vector<std::optional<triangle<float>>> projected_triangle_left_ray;
+		std::vector<std::optional<triangle<float>>> projected_triangle_right_ray;
+		const Line line_to_project{ { { 100.0f, 100.0f }, {130.0f, 100.0f} } };
+		const Triangle triangle_to_project{ { {65.0f, 107.0f}, {18.0f, 100.0f}, {80.0f, 170.0f}} };
+
+
 		if (GetMouse(1).bHeld)
 		{
 			// Enable Ray Mode
@@ -344,6 +414,27 @@ public:
 			vIntersections.insert(vIntersections.end(), vPoints3.begin(), vPoints3.end());
 			
 
+			for (const auto& shape : vecShapes)
+			{
+				if(mode == Mode::CircleProject && (std::holds_alternative<Rect>(shape) || std::holds_alternative<Triangle>(shape)))
+				{
+					projected_circle_left_ray.push_back(CheckProject(Circle{ { { 130.0f, 20.0f }, {150.0f, 20.0f} } }, shape, ray1));
+					projected_circle_right_ray.push_back(CheckProject(Circle{ { { 130.0f, 20.0f }, {150.0f, 20.0f} } }, shape, ray2));
+				}
+
+				else if (mode == Mode::LineProject && (std::holds_alternative<Circle>(shape)))
+				{
+					projected_line_left_ray.push_back(CheckProject(line_to_project, shape, ray1, left_line_end_length));
+					projected_line_right_ray.push_back(CheckProject(line_to_project, shape, ray2));
+				}
+
+				else if (mode == Mode::TriangleProject && (std::holds_alternative<Circle>(shape)))
+				{
+					projected_triangle_left_ray.push_back(CheckProjectTriangle(triangle_to_project, shape, ray1));
+					projected_triangle_right_ray.push_back(CheckProjectTriangle(triangle_to_project, shape, ray2));
+				}
+			}
+			
 		}
 
 		// Draw All Shapes
@@ -373,6 +464,74 @@ public:
 		{
 			DrawShape(ray1, olc::CYAN); 
 			DrawShape(ray2, olc::CYAN);
+
+			for(const auto& projection : projected_circle_left_ray)
+			{
+				if (mode == Mode::CircleProject && projection.has_value())
+				{
+					DrawCircle(projection.value(), 20.0f, olc::CYAN);
+				}
+			}
+			
+			for (const auto& projection : projected_circle_right_ray)
+			{
+				if (mode == Mode::CircleProject && projection.has_value())
+				{
+					DrawCircle(projection.value(), 20.0f, olc::RED);
+				}
+			}
+
+			for (const auto& projection : projected_line_left_ray)
+			{
+				if (mode == Mode::LineProject && projection.has_value())
+				{
+					const auto& vec = make_internal(line_to_project).vector().norm();
+					const auto& end_length = left_line_end_length * make_internal(line_to_project).vector().mag();
+					const auto& start_length = (left_line_end_length - 1) * make_internal(line_to_project).vector().mag();
+					const olc::vf2d start = projection.value() + vec * end_length;
+					const olc::vf2d end = projection.value() + vec * start_length;
+					Line line_to_draw{ {{start}, {end}} };
+					DrawShape(line_to_draw, olc::CYAN);
+				}
+			}
+
+			for (const auto& projection : projected_line_right_ray)
+			{
+				if (mode == Mode::LineProject && projection.has_value())
+				{
+					const auto& vec = make_internal(line_to_project).vector().norm();
+					const auto& half_length = 0.5 * make_internal(line_to_project).vector().mag();
+					const olc::vf2d start = projection.value() - vec * half_length;
+					const olc::vf2d end = projection.value() + vec * half_length;
+					Line line_to_draw{ {{start}, {end}} };
+					DrawShape(line_to_draw, olc::RED);
+				}
+			}
+
+			for (const auto& projection : projected_triangle_left_ray)
+			{
+				if (mode == Mode::TriangleProject && projection.has_value())
+				{
+					const auto p0 = projection.value().pos[0],
+							   p1 = projection.value().pos[1],
+						       p2 = projection.value().pos[2];
+
+					DrawTriangle(p0, p1, p2, olc::CYAN);
+				}
+			}
+
+			for (const auto& projection : projected_triangle_right_ray)
+			{
+				if (mode == Mode::TriangleProject && projection.has_value())
+				{
+					const auto p0 = projection.value().pos[0],
+							   p1 = projection.value().pos[1],
+							   p2 = projection.value().pos[2];
+
+					DrawTriangle(p0, p1, p2, olc::RED);
+				}
+			}
+
 		}
 
 		// Laser beam		

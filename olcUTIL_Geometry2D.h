@@ -895,8 +895,38 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const line<T1>& l1, const line<T2>& l2)
 	{
-		// TODO:
-		return {};
+		std::vector<olc::v_2d<T1>> intersections = intersects(l2, l1);
+		if (!intersections.empty()) {
+			return intersections[0];
+		}
+
+		olc::v_2d<T1> v1 = closest(l1, l2.start);
+		olc::v_2d<T1> v2 = closest(l1, l2.end);
+		olc::v_2d<T2> v3 = closest(l2, l1.start);
+		olc::v_2d<T2> v4 = closest(l2, l1.end);
+
+		T1 d1 = (v1 - l2.start).mag2();
+		T1 d2 = (v2 - l2.end).mag2();
+		T2 d3 = (v3 - l1.start).mag2();
+		T2 d4 = (v4 - l1.end).mag2();
+
+		double min = d1;
+		olc::v_2d<T1>& vClosest = v1;
+
+		if (d2 < min) {
+			min = d2;
+			vClosest = v2;
+		}
+		if (d3 < min) {
+			min = d3;
+			vClosest = l1.start;
+		}
+		if (d4 < min) {
+			min = d4;
+			vClosest = l1.end;
+		}
+
+		return vClosest;
 	}
 
 	// closest(r,l)

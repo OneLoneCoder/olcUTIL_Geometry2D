@@ -2578,7 +2578,32 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool overlaps(const polygon<T>& poly, const circle<T>& c)
 	{
-		return false;
+		T maxProj = std::numeric_limits<T>::lowest();
+		olc::v_2d<T> start, edge;
+
+		for(uint32_t i = 0; i < poly.pos.size(); ++i)
+		{
+			uint32_t next = (i + 1) % poly.pos.size();
+			olc::v_2d<T> e = poly.pos[next] - poly.pos[i];
+			olc::v_2d<T> normal = -e.perp();
+			T proj = normal.dot(c.pos - poly.pos[i]);
+
+			if(proj > maxProj)
+			{
+				maxProj = proj;
+				start = poly.pos[i];
+				edge = e;
+			}
+		}
+
+		if(maxProj <= 0)
+			return true;
+
+		T t = std::clamp(edge.dot(c.pos - start) / edge.mag2(), T(0), T(1));
+		olc::v_2d<T> closest = start + edge * t;
+		olc::v_2d<T> separation = c.pos - closest;
+
+		return separation.mag2() < c.radius * c.radius;
 	}
 
 	// overlaps(poly,t)

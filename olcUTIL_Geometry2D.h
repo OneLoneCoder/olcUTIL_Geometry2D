@@ -2695,7 +2695,26 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool contains(const polygon<T>& poly, const circle<T>& c)
 	{
-		return false;
+		for(uint32_t i = 0; i < poly.pos.size(); ++i)
+		{
+			uint32_t next = (i + 1) % poly.pos.size();
+			olc::v_2d<T> edge = poly.pos[next] - poly.pos[i];
+			olc::v_2d<T> normal = -edge.perp();
+			olc::v_2d<T> diff = c.pos - poly.pos[i];
+			T proj = normal.dot(diff);
+
+			if(proj > 0)
+				return false;
+
+			T t = edge.dot(diff) / edge.mag2();
+			olc::v_2d<T> closest = poly.pos[i] + edge * t;
+			olc::v_2d<T> separation = c.pos - closest;
+
+			if(separation.mag2() < c.radius * c.radius)
+				return false;
+		}
+
+		return true;
 	}
 
 	// contains(poly,t)

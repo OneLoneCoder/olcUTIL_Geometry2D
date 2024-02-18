@@ -2756,7 +2756,13 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool contains(const circle<T>& c, const polygon<T>& poly)
 	{
-		return false;
+		for(uint32_t i = 0; i < poly.pos.size(); ++i)
+		{
+			if((poly.pos[i] - c.pos).mag2() > c.radius * c.radius)
+				return false;
+		}
+
+		return true;
 	}
 
 	// contains(t,poly)

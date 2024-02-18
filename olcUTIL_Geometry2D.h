@@ -2644,7 +2644,7 @@ namespace olc::utils::geom2d
 	template <typename T>
 	inline constexpr bool overlaps(const circle<T>& c, const polygon<T>& poly)
 	{
-		return false;
+		return overlaps(poly, c);
 	}
 
 	// overlaps(t,poly)

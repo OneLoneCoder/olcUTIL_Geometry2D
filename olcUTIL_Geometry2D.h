@@ -192,6 +192,15 @@
 #include <cassert>
 #include <array>
 
+
+#ifdef PGE_VER
+#error "olcUTIL_Geometry2D.h must be included BEFORE olcPixelGameEngine.h"
+#else
+
+#ifndef OLC_IGNORE_VEC2D
+#define OLC_IGNORE_VEC2D
+#endif
+
 #ifndef OLC_V2D_TYPE
 #define OLC_V2D_TYPE
 namespace olc
@@ -2493,3 +2502,5 @@ namespace olc::utils::geom2d
 		return internal::filter_duplicate_points(intersections);
 	}
 }
+
+#endif // PGE_VER

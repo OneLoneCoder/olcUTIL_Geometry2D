@@ -36,3 +36,19 @@
 /Test_Geometry2D.vcxproj
 /Test_Geometry2D.sln
 build
+
+#CMake generated files and directories
+/ALL_BUILD.vcxproj
+/ALL_BUILD.vcxproj.filters
+/ALL_BUILD.vcxproj.user
+/CMakeCache.txt
+/Test_Geometry2D.vcxproj.user
+/ZERO_CHECK.vcxproj
+/ZERO_CHECK.vcxproj.filters
+/ZERO_CHECK.vcxproj.user
+/cmake_install.cmake
+/olcUTIL_Geometry2D.sln
+
+CMakeFiles/
+TEST_Geometry2D.dir/
+bin/

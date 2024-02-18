@@ -950,10 +950,9 @@ namespace olc::utils::geom2d
 	// closest(c,c)
 	// Returns closest point on circle to circle
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const circle<T1>& c, const circle<T2>& l)
+	inline olc::v_2d<T1> closest(const circle<T1>& c1, const circle<T2>& c2)
 	{
-		// TODO:
-		return {};
+		return closest(c1, c2.pos);
 	}
 
 	// closest(t,c)

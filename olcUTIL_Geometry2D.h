@@ -192,6 +192,15 @@
 #include <cassert>
 #include <array>
 
+
+#ifdef PGE_VER
+#error "olcUTIL_Geometry2D.h must be included BEFORE olcPixelGameEngine.h"
+#else
+
+#ifndef OLC_IGNORE_VEC2D
+#define OLC_IGNORE_VEC2D
+#endif
+
 #ifndef OLC_V2D_TYPE
 #define OLC_V2D_TYPE
 namespace olc
@@ -980,10 +989,9 @@ namespace olc::utils::geom2d
 	// closest(c,c)
 	// Returns closest point on circle to circle
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const circle<T1>& c, const circle<T2>& l)
+	inline olc::v_2d<T1> closest(const circle<T1>& c1, const circle<T2>& c2)
 	{
-		// TODO:
-		return {};
+		return closest(c1, c2.pos);
 	}
 
 	// closest(t,c)
@@ -2487,7 +2495,8 @@ namespace olc::utils::geom2d
 			if (s2 < 0)
 				return { q.origin + q.direction * s1 };
 
-			return { q.origin + q.direction * std::min(s1, s2) };
+			const auto [min_s, max_s] = std::minmax(s1, s2);
+			return { q.origin + q.direction * min_s, q.origin + q.direction * max_s };
 		}
 	}
 
@@ -2523,3 +2532,5 @@ namespace olc::utils::geom2d
 		return internal::filter_duplicate_points(intersections);
 	}
 }
+
+#endif // PGE_VER

@@ -172,7 +172,7 @@
              | intersects   | intersects   | intersects   | intersects   | intersects   |              |
              |              |              |              |              |              |              |
     ---------+--------------+--------------+--------------+--------------+--------------+--------------+
-    RAY      |              |              |              |              |              |              |
+    RAY      | contains     |              |              |              |              |              |
              |              |              |              |              |              |              |
              |              | collision    | collision    | collision    | collision    | collision*   |
              |              | intersects   | intersects   | intersects   | intersects   | intersects   |
@@ -190,6 +190,16 @@
 #include <cstdint>
 #include <optional>
 #include <cassert>
+#include <array>
+
+
+#ifdef PGE_VER
+#error "olcUTIL_Geometry2D.h must be included BEFORE olcPixelGameEngine.h"
+#else
+
+#ifndef OLC_IGNORE_VEC2D
+#define OLC_IGNORE_VEC2D
+#endif
 
 #ifndef OLC_V2D_TYPE
 #define OLC_V2D_TYPE
@@ -949,10 +959,9 @@ namespace olc::utils::geom2d
 	// closest(c,c)
 	// Returns closest point on circle to circle
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const circle<T1>& c, const circle<T2>& l)
+	inline olc::v_2d<T1> closest(const circle<T1>& c1, const circle<T2>& c2)
 	{
-		// TODO:
-		return {};
+		return closest(c1, c2.pos);
 	}
 
 	// closest(t,c)
@@ -1064,10 +1073,35 @@ namespace olc::utils::geom2d
 		return s >= T2(0) && v >= T2(0) && (s + v) <= T2(2) * A * sign;
 	}
 
+	template<typename T1, typename T2>
+	inline constexpr bool contains(const ray<T1>& r, const olc::v_2d<T2>& p)
+	{
+		// Calculate the vector from the ray's origin to point p
+		olc::v_2d<T2> op = p - r.origin;
 
+		// Calculate the dot product between op and the ray's direction
+		// This checks if p is in the direction of the ray and not behind the origin
+		T2 dotProduct = op.dot(r.direction);
+
+		if (dotProduct < 0) {
+			// p is behind the ray's origin
+			return false;
+		}
+
+		// Project op onto the ray's direction (which is already normalized)
+		olc::v_2d<T2> projection = { r.direction.x * dotProduct, r.direction.y * dotProduct };
+
+		// Check if the projection of op onto the ray's direction is equivalent to op
+		// This is true if p lies on the ray
+
+		T2 distance = std::sqrt((projection.x - op.x) * (projection.x - op.x) + (projection.y - op.y) * (projection.y - op.y));
+
+		// Assuming a small threshold for floating point arithmetic issues
+		return distance < epsilon;
+	}
 
 	// overlaps(p,p)
-	// Check if point overlaps with point (analagous to contains())
+	// Check if point overlaps with point (analogous to contains())
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const olc::v_2d<T1>& p1, const olc::v_2d<T2>& p2)
 	{
@@ -2104,7 +2138,7 @@ namespace olc::utils::geom2d
 		olc::v_2d<T2> vClosest;
 		for (const auto& vContact : vAllIntersections)
 		{
-			double dDistance = (vContact - c.pos).mag2();
+			double dDistance = (vContact - q.origin).mag2();
 			if (dDistance < dClosest)
 			{
 				dClosest = dDistance;
@@ -2120,8 +2154,37 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2, typename T3>
 	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const rect<T2>& r, const ray<T3>& q)
 	{
-		// TODO:
-		return std::nullopt;
+		const auto s1 = project(c, r.top(), q);
+		const auto s2 = project(c, r.bottom(), q);
+		const auto s3 = project(c, r.left(), q);
+		const auto s4 = project(c, r.right(), q);
+
+		std::vector<olc::v_2d<T2>> vAllIntersections;
+		if (s1.has_value()) vAllIntersections.push_back(s1.value());
+		if (s2.has_value()) vAllIntersections.push_back(s2.value());
+		if (s3.has_value()) vAllIntersections.push_back(s3.value());
+		if (s4.has_value()) vAllIntersections.push_back(s4.value());
+		
+		if (vAllIntersections.size() == 0)
+		{
+			// No intersections at all, so
+			return std::nullopt;
+		}
+
+		// Find closest
+		double dClosest = std::numeric_limits<double>::max();
+		olc::v_2d<T2> vClosest;
+		for (const auto& vContact : vAllIntersections)
+		{
+			double dDistance = (vContact - q.origin).mag2();
+			if (dDistance < dClosest)
+			{
+				dClosest = dDistance;
+				vClosest = vContact;
+			}
+		}
+
+		return vClosest;
 	}
 
 	// project(c,t)
@@ -2402,7 +2465,8 @@ namespace olc::utils::geom2d
 			if (s2 < 0)
 				return { q.origin + q.direction * s1 };
 
-			return { q.origin + q.direction * std::min(s1, s2) };
+			const auto [min_s, max_s] = std::minmax(s1, s2);
+			return { q.origin + q.direction * min_s, q.origin + q.direction * max_s };
 		}
 	}
 
@@ -2438,3 +2502,5 @@ namespace olc::utils::geom2d
 		return internal::filter_duplicate_points(intersections);
 	}
 }
+
+#endif // PGE_VER

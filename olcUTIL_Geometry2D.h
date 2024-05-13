@@ -1381,6 +1381,25 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const polygon<T1>& p, const line<T2>& l)
 	{
+		line<T1> l2;
+
+		for (size_t i = 0; i < p.pos.size(); i++)
+		{
+			if (i == p.pos.size() - 1)
+			{
+				l2 = { p.pos[i], p.pos[0] };
+			}
+			else
+			{
+				l2 = { p.pos[i], p.pos[i + 1] };
+			}
+
+			if (overlaps(l, l2) == true)
+			{
+				return false;
+			}
+		}
+
 		return contains(p, l.start) && contains(p, l.end);
 	}
 

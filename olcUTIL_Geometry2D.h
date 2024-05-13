@@ -2985,13 +2985,13 @@ namespace olc::utils::geom2d
 	{
 		for (auto& triangle : p1.triangles)
 		{
-			if (contains(triangle, p2) == true)
+			if (contains(triangle, p2) == false)
 			{
-				return true;
+				return false;
 			}
 		}
 
-		return false;
+		return true;
 	}
 
 	// contains(p,p)
@@ -2999,14 +2999,6 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const olc::v_2d<T1>& p1, const polygon<T2>& p2)
 	{
-		for (auto& triangle : p2.triangles)
-		{
-			if (contains(triangle, p1) == true)
-			{
-				return true;
-			}
-		}
-
 		return false;
 	}
 
@@ -3015,14 +3007,6 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const line<T1>& l, const polygon<T2>& p)
 	{
-		for (auto& triangle : p.triangles)
-		{
-			if (contains(triangle, l) == true)
-			{
-				return true;
-			}
-		}
-
 		return false;
 	}
 
@@ -3033,13 +3017,13 @@ namespace olc::utils::geom2d
 	{
 		for (auto& triangle : p.triangles)
 		{
-			if (contains(triangle, r) == true)
+			if (contains(r, triangle) == false)
 			{
-				return true;
+				return false;
 			}
 		}
 
-		return false;
+		return true;
 	}
 
 	// contains(c,p)
@@ -3049,7 +3033,7 @@ namespace olc::utils::geom2d
 	{
 		for (auto& triangle : p.triangles)
 		{
-			if (contains(triangle, c) == false)
+			if (contains(c, triangle) == false)
 			{
 				return false;
 			}
@@ -3065,21 +3049,29 @@ namespace olc::utils::geom2d
 	{
 		for (auto& triangle : p.triangles)
 		{
-			if (contains(triangle, t) == true)
+			if (contains(t, triangle) == false)
 			{
-				return true;
+				return false;
 			}
 		}
 
-		return false;
+		return true;
 	}
 
-	// contains(t,p)
+	// contains(p,p)
 	// Checks if polygon contains polygon
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const polygon<T1>& p1, const polygon<T2>& p2)
 	{
-		return false;
+		for (auto& triangle : p1.triangles)
+		{
+			if (contains(p2, triangle) == false)
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	// intersects(p,p)

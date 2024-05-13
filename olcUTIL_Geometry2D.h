@@ -1896,7 +1896,26 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const polygon<T1>& p, const circle<T2>& c)
 	{
-		return false;
+		line<T1> l;
+
+		for (size_t i = 0; i < p.pos.size(); i++)
+		{
+			if (i == p.pos.size() - 1)
+			{
+				l = { p.pos[i], p.pos[0] };
+			}
+			else
+			{
+				l = { p.pos[i], p.pos[i + 1] };
+			}
+
+			if (overlaps(l, c) == true)
+			{
+				return false;
+			}
+		}
+
+		return contains(p, c.pos);
 	}
 
 
@@ -3030,13 +3049,13 @@ namespace olc::utils::geom2d
 	{
 		for (auto& triangle : p.triangles)
 		{
-			if (contains(triangle, c) == true)
+			if (contains(triangle, c) == false)
 			{
-				return true;
+				return false;
 			}
 		}
 
-		return false;
+		return true;
 	}
 
 	// contains(t,p)

@@ -3220,12 +3220,36 @@ namespace olc::utils::geom2d
 
 
 
-	// reflect(q,c)
+	// reflect(r,p)
 	// optionally returns a ray reflected off a circle if collision occurs
 	template<typename T1, typename T2>
-	inline std::optional<ray<T1>> reflect(const ray<T1>& q, const polygon<T2>& c)
+	inline std::optional<ray<T1>> reflect(const ray<T1>& r, const polygon<T2>& p)
 	{
-		return std::nullopt;
+		line<T1> l2;
+		T1 length = std::numeric_limits<T1>().max();
+		std::optional<ray<T1>> returnValue = std::nullopt;
+
+		for (size_t i = 0; i < p.pos.size(); i++)
+		{
+			if (i == p.pos.size() - 1)
+			{
+				l2 = { p.pos[i], p.pos[0] };
+			}
+			else
+			{
+				l2 = { p.pos[i], p.pos[i + 1] };
+			}
+
+			auto v = reflect(r, l2);
+
+			if (v.has_value() && (v.value().origin - r.origin).mag() < length)
+			{
+				length = (v.value().origin - r.origin).mag();
+				returnValue = v;
+			}
+		}
+
+		return returnValue;
 	}
 }
 

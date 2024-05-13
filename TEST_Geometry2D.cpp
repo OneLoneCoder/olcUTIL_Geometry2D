@@ -226,6 +226,7 @@ public:
 	void draw_internal(const Polygon& p, const olc::Pixel col)
 	{
 		const auto t = make_internal(p);
+
 		for (size_t i = 0; i < t.pos.size(); i++)
 		{
 			if (i == t.pos.size() - 1)
@@ -235,6 +236,14 @@ public:
 			else
 			{
 				DrawLine(t.pos[i], t.pos[i + 1], col);
+			}
+		}
+
+		if (bShowPolygonTriangles == true)
+		{
+			for (auto& triangle : t.triangles)
+			{
+				DrawTriangle(triangle.pos[0], triangle.pos[1], triangle.pos[2], col);
 			}
 		}
 	}
@@ -251,6 +260,7 @@ public:
 
 	size_t nSelectedShapeIndex = -1;
 	olc::vi2d vOldMousePos;
+	bool bShowPolygonTriangles = false;
 
 public: 
 	bool OnUserCreate() override
@@ -268,7 +278,7 @@ public:
 
 		vecShapes.push_back({ Triangle{{ {50.0f, 100.0f}, {10.0f, 150.0f}, {90.0f, 150.0f}} }});
 		vecShapes.push_back({ Triangle{{ {350.0f, 200.0f}, {500.0f, 150.0f}, {450.0f, 400.0f}} }});
-		vecShapes.push_back({ Polygon{{ {60.0f, 420.0f}, {10.0f, 370.0f}, {160.0f, 320.0f}, {210.f, 420.0f}, {160.0f, 470.0f}, {10.0f, 470.0f} }} });
+		vecShapes.push_back({ Polygon{{ {60.0f, 420.0f}, {10.0f, 370.0f}, {160.0f, 320.0f}, {210.f, 420.0f}, {160.0f, 470.0f}, {30.0f, 470.0f} }} });
 
 		return true;
 	}
@@ -276,6 +286,11 @@ public:
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 		Clear(olc::VERY_DARK_BLUE);
+
+		if (GetKey(olc::Key::SPACE).bPressed == true)
+		{
+			bShowPolygonTriangles = !bShowPolygonTriangles;
+		}
 
 		olc::vf2d vMouseDelta = GetMousePos() - vOldMousePos;
 		vOldMousePos = GetMousePos();

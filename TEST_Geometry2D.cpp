@@ -416,9 +416,6 @@ public:
 
 			for (size_t i = 0; i < vecShapes.size(); i++)
 			{
-				// Dont check against origin shape
-				if (i == last_hit_index) continue;
-
 				const auto& vTargetShape = vecShapes[i];
 				auto hit = CheckReflect(ray_laser, vTargetShape);
 				if (hit.has_value())
@@ -437,6 +434,7 @@ public:
 			{				
 				DrawLine(ray_laser.origin, ray_reflected.origin, olc::Pixel(rand() % 155 + 100, 0, 0));
 				ray_laser = ray_reflected;
+				ray_laser.origin += ray_reflected.direction * 0.01f;
 				ray_stop = false;
 				last_hit_index = closest_hit_index;
 				nBounces--;

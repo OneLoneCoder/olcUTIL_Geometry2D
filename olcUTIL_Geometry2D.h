@@ -1563,11 +1563,21 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& p, const line<T2>& l)
 	{
+		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
 
-		for (auto& triangle : p.triangles)
+		for (size_t i = 0; i < p.pos.size(); i++)
 		{
-			auto v = intersects(triangle, l);
+			if (i == p.pos.size() - 1)
+			{
+				l2 = { p.pos[i], p.pos[0] };
+			}
+			else
+			{
+				l2 = { p.pos[i], p.pos[i + 1] };
+			}
+
+			auto v = intersects(l, l2);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -1783,11 +1793,21 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& p, const rect<T2>& r)
 	{
+		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
 
-		for (auto& triangle : p.triangles)
+		for (size_t i = 0; i < p.pos.size(); i++)
 		{
-			auto v = intersects(triangle, r);
+			if (i == p.pos.size() - 1)
+			{
+				l2 = { p.pos[i], p.pos[0] };
+			}
+			else
+			{
+				l2 = { p.pos[i], p.pos[i + 1] };
+			}
+
+			auto v = intersects(r, l2);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -2009,11 +2029,21 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& p, const circle<T2>& c)
 	{
+		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
 
-		for (auto& triangle : p.triangles)
+		for (size_t i = 0; i < p.pos.size(); i++)
 		{
-			auto v = intersects(triangle, c);
+			if (i == p.pos.size() - 1)
+			{
+				l2 = { p.pos[i], p.pos[0] };
+			}
+			else
+			{
+				l2 = { p.pos[i], p.pos[i + 1] };
+			}
+
+			auto v = intersects(c, l2);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -2206,11 +2236,21 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& p, const triangle<T2>& t)
 	{
+		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
 
-		for (auto& triangle : p.triangles)
+		for (size_t i = 0; i < p.pos.size(); i++)
 		{
-			auto v = intersects(triangle, t);
+			if (i == p.pos.size() - 1)
+			{
+				l2 = { p.pos[i], p.pos[0] };
+			}
+			else
+			{
+				l2 = { p.pos[i], p.pos[i + 1] };
+			}
+
+			auto v = intersects(t, l2);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 

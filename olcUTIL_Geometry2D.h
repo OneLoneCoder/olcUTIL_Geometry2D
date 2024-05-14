@@ -2896,7 +2896,7 @@ namespace olc::utils::geom2d
 
 				olc::v_2d<T> pb_pa = points[b] - points[a];
 				olc::v_2d<T> pc_pa = points[c] - points[a];
-				float cross = pb_pa.cross(pc_pa);
+				
 				if (pb_pa.cross(pc_pa) > 0.0f)
 				{
 					continue;

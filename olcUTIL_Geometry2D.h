@@ -793,6 +793,8 @@ namespace olc::utils::geom2d
 
 		// triangles that make up the polygon
 		std::vector<triangle<T>> triangles;
+
+		std::vector<line<T>> edges;
 	};
 
 
@@ -1381,20 +1383,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const polygon<T1>& p, const line<T2>& l)
 	{
-		line<T1> l2;
-
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-
-			if (overlaps(l, l2) == true)
+			if (overlaps(l, edge) == true)
 			{
 				return false;
 			}
@@ -1582,21 +1573,11 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& p, const line<T2>& l)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
 
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-
-			auto v = intersects(l, l2);
+			auto v = intersects(l, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -1812,21 +1793,11 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& p, const rect<T2>& r)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
 
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-
-			auto v = intersects(r, l2);
+			auto v = intersects(r, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -1896,20 +1867,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool contains(const polygon<T1>& p, const circle<T2>& c)
 	{
-		line<T1> l;
-
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l = { p.pos[i], p.pos[i + 1] };
-			}
-
-			if (overlaps(l, c) == true)
+			if (overlaps(c, edge) == true)
 			{
 				return false;
 			}
@@ -2067,21 +2027,11 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& p, const circle<T2>& c)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
 
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-
-			auto v = intersects(c, l2);
+			auto v = intersects(c, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -2274,21 +2224,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& p, const triangle<T2>& t)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
-
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-
-			auto v = intersects(t, l2);
+			auto v = intersects(t, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -2879,6 +2818,20 @@ namespace olc::utils::geom2d
 		{
 			indexList.push_back(i);
 			returnPolygon.pos.push_back(points[i]);
+			line<T> edge;
+			
+			if (i == points.size() - 1)
+			{
+				edge.start = points[i];
+				edge.end = points[0];
+			}
+			else
+			{
+				edge.start = points[i];
+				edge.end = points[i + 1];
+			}
+
+			returnPolygon.edges.push_back(edge);
 		}
 
 		while (indexList.size() > 3)
@@ -3095,21 +3048,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const line<T1> l, const polygon<T2>& p)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
-
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-			
-			auto v = intersects(l2, l);
+			auto v = intersects(l, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -3121,21 +3063,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const rect<T1> r, const polygon<T2>& p)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
-
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-
-			auto v = intersects(l2, r);
+			auto v = intersects(r, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -3147,21 +3078,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const circle<T1> c, const polygon<T2>& p)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
-
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-
-			auto v = intersects(l2, c);
+			auto v = intersects(c, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -3173,21 +3093,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1> t, const polygon<T2>& p)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
-
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-
-			auto v = intersects(l2, t);
+			auto v = intersects(t, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -3199,21 +3108,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1> p1, const polygon<T2>& p2)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
-
-		for (size_t i = 0; i < p2.pos.size(); i++)
+		for (auto& edge : p2.edges)
 		{
-			if (i == p2.pos.size() - 1)
-			{
-				l2 = { p2.pos[i], p2.pos[0] };
-			}
-			else
-			{
-				l2 = { p2.pos[i], p2.pos[i + 1] };
-			}
-
-			auto v = intersects(l2, p1);
+			auto v = intersects(p1, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 
@@ -3227,21 +3125,10 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& r, const polygon<T2>& p)
 	{
-		line<T1> l2;
 		std::vector<olc::v_2d<T2>> intersections;
-
-		for (size_t i = 0; i < p.pos.size(); i++)
+		for (auto& edge : p.edges)
 		{
-			if (i == p.pos.size() - 1)
-			{
-				l2 = { p.pos[i], p.pos[0] };
-			}
-			else
-			{
-				l2 = { p.pos[i], p.pos[i + 1] };
-			}
-
-			auto v = intersects(r, l2);
+			auto v = intersects(r, edge);
 			intersections.insert(intersections.end(), v.begin(), v.end());
 		}
 

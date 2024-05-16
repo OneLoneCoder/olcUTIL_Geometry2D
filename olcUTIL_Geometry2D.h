@@ -2812,12 +2812,23 @@ namespace olc::utils::geom2d
 	{
 		polygon<T> returnPolygon;
 
+		// Less than three points so return empty polygpon
+		if (points.size() < 3)
+		{
+			return returnPolygon;
+		}
+
 		std::vector<size_t> indexList;
+
+		float area = 0.0;
 
 		for (size_t i = 0; i < points.size(); i++)
 		{
 			indexList.push_back(i);
 			returnPolygon.pos.push_back(points[i]);
+			size_t j = (i + 1) % points.size();
+			area += points[i].x * points[j].y - points[j].x * points[i].y;
+
 			line<T> edge;
 			
 			if (i == points.size() - 1)
@@ -2834,6 +2845,12 @@ namespace olc::utils::geom2d
 			returnPolygon.edges.push_back(edge);
 		}
 
+		if (area < 0.0f)
+		{
+			std::reverse(returnPolygon.pos.begin(), returnPolygon.pos.end());
+			std::reverse(returnPolygon.edges.begin(), returnPolygon.edges.end());
+		}
+
 		while (indexList.size() > 3)
 		{
 			for (size_t i = 0; i < indexList.size(); i++)
@@ -2843,12 +2860,12 @@ namespace olc::utils::geom2d
 				size_t c = indexList[i == indexList.size() - 1 ? 0 : i + 1];
 
 				triangle<T> thisTriangle;
-				thisTriangle.pos[0] = points[a];
-				thisTriangle.pos[1] = points[b];
-				thisTriangle.pos[2] = points[c];
+				thisTriangle.pos[0] = returnPolygon.pos[a];
+				thisTriangle.pos[1] = returnPolygon.pos[b];
+				thisTriangle.pos[2] = returnPolygon.pos[c];
 
-				olc::v_2d<T> pb_pa = points[b] - points[a];
-				olc::v_2d<T> pc_pa = points[c] - points[a];
+				olc::v_2d<T> pb_pa = returnPolygon.pos[b] - returnPolygon.pos[a];
+				olc::v_2d<T> pc_pa = returnPolygon.pos[c] - returnPolygon.pos[a];
 				
 				if (pb_pa.cross(pc_pa) > 0.0f)
 				{
@@ -2857,14 +2874,14 @@ namespace olc::utils::geom2d
 
 				bool isEar = true;
 
-				for (size_t j = 0; j < points.size(); j++)
+				for (size_t j = 0; j < returnPolygon.pos.size(); j++)
 				{
 					if (j == a || j == b || j == c)
 					{
 						continue;
 					}
 
-					if (contains(thisTriangle, points[j]) == true)
+					if (contains(thisTriangle, returnPolygon.pos[j]) == true)
 					{
 						isEar = false;
 						break;
@@ -2882,9 +2899,9 @@ namespace olc::utils::geom2d
 		}
 
 		triangle<T> lastTriangle;
-		lastTriangle.pos[0] = points[indexList[0]];
-		lastTriangle.pos[1] = points[indexList[1]];
-		lastTriangle.pos[2] = points[indexList[2]];
+		lastTriangle.pos[0] = returnPolygon.pos[indexList[0]];
+		lastTriangle.pos[1] = returnPolygon.pos[indexList[1]];
+		lastTriangle.pos[2] = returnPolygon.pos[indexList[2]];
 
 		returnPolygon.triangles.push_back(lastTriangle);
 

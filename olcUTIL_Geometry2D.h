@@ -2851,7 +2851,9 @@ namespace olc::utils::geom2d
 			std::reverse(returnPolygon.edges.begin(), returnPolygon.edges.end());
 		}
 
-		while (indexList.size() > 3)
+		uint32_t loopCounter = 1000;
+
+		while (indexList.size() > 3 && loopCounter > 0)
 		{
 			for (size_t i = 0; i < indexList.size(); i++)
 			{
@@ -2864,10 +2866,10 @@ namespace olc::utils::geom2d
 				thisTriangle.pos[1] = returnPolygon.pos[b];
 				thisTriangle.pos[2] = returnPolygon.pos[c];
 
-				olc::v_2d<T> pb_pa = returnPolygon.pos[b] - returnPolygon.pos[a];
-				olc::v_2d<T> pc_pa = returnPolygon.pos[c] - returnPolygon.pos[a];
+				vf2d pb_pa = returnPolygon.pos[b] - returnPolygon.pos[a];
+				vf2d pc_pa = returnPolygon.pos[c] - returnPolygon.pos[a];
 				
-				if (pb_pa.cross(pc_pa) > 0.0f)
+				if (pb_pa.x * pc_pa.y - pb_pa.y * pc_pa.x > 0.0f)
 				{
 					continue;
 				}
@@ -2881,7 +2883,8 @@ namespace olc::utils::geom2d
 						continue;
 					}
 
-					if (contains(thisTriangle, returnPolygon.pos[j]) == true)
+					triangle<float> fTriangle(thisTriangle.pos[0], thisTriangle.pos[1], thisTriangle.pos[2]);
+					if (contains(fTriangle, vf2d(returnPolygon.pos[j])) == true)
 					{
 						isEar = false;
 						break;
@@ -2896,6 +2899,8 @@ namespace olc::utils::geom2d
 					break;
 				}
 			}
+
+			loopCounter--;
 		}
 
 		triangle<T> lastTriangle;

@@ -2495,8 +2495,35 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2, typename T3>
 	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const triangle<T2>& t, const ray<T3>& q)
 	{
-		// TODO:
-		return std::nullopt;
+		const auto s1 = project(c, t.side(0), q);
+		const auto s2 = project(c, t.side(1), q);
+		const auto s3 = project(c, t.side(2), q);
+
+		std::vector<olc::v_2d<T2>> vAllIntersections;
+		if (s1.has_value()) vAllIntersections.push_back(s1.value());
+		if (s2.has_value()) vAllIntersections.push_back(s2.value());
+		if (s3.has_value()) vAllIntersections.push_back(s3.value());
+
+		if (vAllIntersections.size() == 0)
+		{
+			// No intersections at all, so
+			return std::nullopt;
+		}
+
+		// Find closest
+		double dClosest = std::numeric_limits<double>::max();
+		olc::v_2d<T2> vClosest;
+		for (const auto& vContact : vAllIntersections)
+		{
+			double dDistance = (vContact - q.origin).mag2();
+			if (dDistance < dClosest)
+			{
+				dClosest = dDistance;
+				vClosest = vContact;
+			}
+		}
+
+		return vClosest;
 	}
 
 

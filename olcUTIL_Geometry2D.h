@@ -2926,7 +2926,15 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const line<T1>& l, const polygon<T2>& p)
 	{
-		return contains(l, p);
+		for (auto& triangle : p.triangles)
+		{
+			if (overlaps(l, triangle) == true)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	// overlaps(r,p)
@@ -2934,7 +2942,15 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const rect<T1>& r, const polygon<T2>& p)
 	{
-		return contains(r, p);
+		for (auto& triangle : p.triangles)
+		{
+			if (overlaps(r, triangle) == true)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	// overlaps(c,p)
@@ -2942,7 +2958,15 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const circle<T1>& c, const polygon<T2>& p)
 	{
-		return contains(c, p);
+		for (auto& triangle : p.triangles)
+		{
+			if (overlaps(c, triangle) == true)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	// overlaps(t,p)
@@ -2950,7 +2974,15 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline constexpr bool overlaps(const triangle<T1>& t, const polygon<T2>& p)
 	{
-		return contains(t, p);
+		for (auto& triangle : p.triangles)
+		{
+			if (overlaps(t, triangle) == true)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	// overlaps(t,p)
@@ -2960,7 +2992,7 @@ namespace olc::utils::geom2d
 	{
 		for (auto& triangle : p1.triangles)
 		{
-			if (contains(triangle, p2) == false)
+			if (overlaps(triangle, p2) == false)
 			{
 				return false;
 			}

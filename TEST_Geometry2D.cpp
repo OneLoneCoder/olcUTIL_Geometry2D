@@ -1,6 +1,4 @@
 #define OLC_PGE_APPLICATION
-#define OLC_IGNORE_VEC2D
-
 #include "olcUTIL_Geometry2D.h"
 #include "third_party/olcPixelGameEngine.h"
 

@@ -3019,13 +3019,13 @@ namespace olc::utils::geom2d
 	{
 		for (auto& triangle : p1.triangles)
 		{
-			if (overlaps(triangle, p2) == false)
+			if (overlaps(triangle, p2) == true)
 			{
-				return false;
+				return true;
 			}
 		}
 
-		return true;
+		return false;
 	}
 
 	// contains(p,p)

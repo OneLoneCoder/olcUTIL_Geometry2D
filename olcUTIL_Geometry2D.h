@@ -544,6 +544,48 @@ namespace olc::utils::geom2d
 
 			return filtered_points;
 		}
+
+		template <typename T>
+		bool overlaps(const std::vector<v_2d<T>>& a, const std::vector<v_2d<T>>& b)
+		{
+			for(uint32_t i = 0; i < a.size(); ++i)
+			{
+				uint32_t next = (i + 1) % a.size();
+				olc::v_2d<T> edge = a[next] - a[i];
+				olc::v_2d<T> normal = -edge.perp();
+				T minProj = std::numeric_limits<T>::max();
+
+				for(uint32_t j = 0; j < b.size(); ++j)
+				{
+					T proj = normal.dot(b[j] - a[i]);
+					minProj = std::min(minProj, proj);
+				}
+
+				if(minProj >= 0)
+					return false;
+			}
+
+			return true;
+		}
+
+		template <typename T>
+		bool contains(const std::vector<v_2d<T>>& a, const std::vector<v_2d<T>>& b)
+		{
+			for(uint32_t i = 0; i < a.size(); ++i)
+			{
+				uint32_t next = (i + 1) % a.size();
+				olc::v_2d<T> edge = a[next] - a[i];
+				olc::v_2d<T> normal = -edge.perp();
+
+				for(uint32_t j = 0; j < b.size(); ++j)
+				{
+					if(normal.dot(b[j] - a[i]) > 0)
+						return false;
+				}
+			}
+
+			return true;
+		}
 	};
 
 	//https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
@@ -2522,6 +2564,357 @@ namespace olc::utils::geom2d
 		}
 
 		return internal::filter_duplicate_points(intersections);
+	}
+
+
+	// ================================================================================================================
+	// POLYGON ========================================================================================================
+
+	// overlaps(poly,poly)
+	// Checks if polygon overlaps polygon
+	template <typename T>
+	inline constexpr bool overlaps(const polygon<T>& poly1, const polygon<T>& poly2)
+	{
+		return internal::overlaps(poly1.pos, poly2.pos) && internal::overlaps(poly2.pos, poly1.pos);
+	}
+
+	// overlaps(poly,p)
+	// Checks if polygon overlaps point
+	template <typename T>
+	inline constexpr bool overlaps(const polygon<T>& poly, const v_2d<T>& p)
+	{
+		return contains(poly, p);
+	}
+
+	// overlaps(poly,l)
+	// Checks if polygon overlaps line segment
+	template <typename T>
+	inline constexpr bool overlaps(const polygon<T>& poly, const line<T>& l)
+	{
+		std::vector<olc::v_2d<T>> lineVerts{l.start, l.end};
+		return internal::overlaps(poly.pos, lineVerts) && internal::overlaps(lineVerts, poly.pos);
+	}
+
+	// overlaps(poly,r)
+	// Checks if polygon overlaps rect
+	template <typename T>
+	inline constexpr bool overlaps(const polygon<T>& poly, const rect<T>& r)
+	{
+		std::vector<olc::v_2d<T>> rectVerts{r.pos, {r.pos.x + r.size.x, r.pos.y}, r.pos + r.size, {r.pos.x, r.pos.y + r.size.y}};
+		return internal::overlaps(poly.pos, rectVerts) && internal::overlaps(rectVerts, poly.pos);
+	}
+
+	// overlaps(poly,c)
+	// Checks if polygon overlaps circle
+	template <typename T>
+	inline constexpr bool overlaps(const polygon<T>& poly, const circle<T>& c)
+	{
+		T maxProj = std::numeric_limits<T>::lowest();
+		olc::v_2d<T> start, edge;
+
+		for(uint32_t i = 0; i < poly.pos.size(); ++i)
+		{
+			uint32_t next = (i + 1) % poly.pos.size();
+			olc::v_2d<T> e = poly.pos[next] - poly.pos[i];
+			olc::v_2d<T> normal = -e.perp();
+			T proj = normal.dot(c.pos - poly.pos[i]);
+
+			if(proj > maxProj)
+			{
+				maxProj = proj;
+				start = poly.pos[i];
+				edge = e;
+			}
+		}
+
+		if(maxProj <= 0)
+			return true;
+
+		T t = std::clamp(edge.dot(c.pos - start) / edge.mag2(), T(0), T(1));
+		olc::v_2d<T> closest = start + edge * t;
+		olc::v_2d<T> separation = c.pos - closest;
+
+		return separation.mag2() < c.radius * c.radius;
+	}
+
+	// overlaps(poly,t)
+	// Checks if polygon overlaps triangle
+	template <typename T>
+	inline constexpr bool overlaps(const polygon<T>& poly, const triangle<T>& t)
+	{
+		std::vector<olc::v_2d<T>> triVerts{t.pos.begin(), t.pos.end()};
+		return internal::overlaps(poly.pos, triVerts) && internal::overlaps(triVerts, poly.pos);
+	}
+
+	// overlaps(p,poly)
+	// Checks if point overlaps polygon
+	template <typename T>
+	inline constexpr bool overlaps(const v_2d<T>& p, const polygon<T>& poly)
+	{
+		return contains(poly, p);
+	}
+
+	// overlaps(l,poly)
+	// Checks if line segment overlaps polygon
+	template <typename T>
+	inline constexpr bool overlaps(const line<T>& l, const polygon<T>& poly)
+	{
+		return overlaps(poly, l);
+	}
+
+	// overlaps(r,poly)
+	// Checks if rect overlaps polygon
+	template <typename T>
+	inline constexpr bool overlaps(const rect<T>& r, const polygon<T>& poly)
+	{
+		return overlaps(poly, r);
+	}
+
+	// overlaps(c,poly)
+	// Checks if circle overlaps polygon
+	template <typename T>
+	inline constexpr bool overlaps(const circle<T>& c, const polygon<T>& poly)
+	{
+		return overlaps(poly, c);
+	}
+
+	// overlaps(t,poly)
+	// Checks if triangle overlaps polygon
+	template <typename T>
+	inline constexpr bool overlaps(const triangle<T>& t, const polygon<T>& poly)
+	{
+		return overlaps(poly, t);
+	}
+
+	// contains(poly,poly)
+	// Checks if polygon contains polygon
+	template <typename T>
+	inline constexpr bool contains(const polygon<T>& poly1, const polygon<T>& poly2)
+	{
+		return internal::contains(poly1.pos, poly2.pos);
+	}
+
+	// contains(poly,p)
+	// Checks if polygon contains point
+	template <typename T>
+	inline constexpr bool contains(const polygon<T>& poly, const v_2d<T>& p)
+	{
+		std::vector<olc::v_2d<T>> point{p};
+		return internal::contains(poly.pos, point);
+	}
+
+	// contains(poly,l)
+	// Checks if polygon contains line segment
+	template <typename T>
+	inline constexpr bool contains(const polygon<T>& poly, const line<T>& l)
+	{
+		std::vector<olc::v_2d<T>> lineVerts{l.start, l.end};
+		return internal::contains(poly.pos, lineVerts);
+	}
+
+	// contains(poly,r)
+	// Checks if polygon contains rect
+	template <typename T>
+	inline constexpr bool contains(const polygon<T>& poly, const rect<T>& r)
+	{
+		std::vector<olc::v_2d<T>> rectVerts{r.pos, {r.pos.x + r.size.x, r.pos.y}, r.pos + r.size, {r.pos.x, r.pos.y + r.size.y}};
+		return internal::contains(poly.pos, rectVerts);
+	}
+
+	// contains(poly,c)
+	// Checks if polygon contains circle
+	template <typename T>
+	inline constexpr bool contains(const polygon<T>& poly, const circle<T>& c)
+	{
+		for(uint32_t i = 0; i < poly.pos.size(); ++i)
+		{
+			uint32_t next = (i + 1) % poly.pos.size();
+			olc::v_2d<T> edge = poly.pos[next] - poly.pos[i];
+			olc::v_2d<T> normal = -edge.perp();
+			olc::v_2d<T> diff = c.pos - poly.pos[i];
+			T proj = normal.dot(diff);
+
+			if(proj > 0)
+				return false;
+
+			T t = edge.dot(diff) / edge.mag2();
+			olc::v_2d<T> closest = poly.pos[i] + edge * t;
+			olc::v_2d<T> separation = c.pos - closest;
+
+			if(separation.mag2() < c.radius * c.radius)
+				return false;
+		}
+
+		return true;
+	}
+
+	// contains(poly,t)
+	// Checks if polygon contains triangle
+	template <typename T>
+	inline constexpr bool contains(const polygon<T>& poly, const triangle<T>& t)
+	{
+		std::vector<olc::v_2d<T>> triVerts{t.pos.begin(), t.pos.end()};
+		return internal::contains(poly.pos, triVerts);
+	}
+
+	// contains(p,poly)
+	// Checks if point contains polygon
+	template <typename T>
+	inline constexpr bool contains(const v_2d<T>& p, const polygon<T>& poly)
+	{
+		return false;
+	}
+
+	// contains(l,poly)
+	// Checks if line segment contains polygon
+	template <typename T>
+	inline constexpr bool contains(const line<T>& l, const polygon<T>& poly)
+	{
+		return false;
+	}
+
+	// contains(r,poly)
+	// Checks if rect contains polygon
+	template <typename T>
+	inline constexpr bool contains(const rect<T>& r, const polygon<T>& poly)
+	{
+		std::vector<olc::v_2d<T>> rectVerts{r.pos, {r.pos.x + r.size.x, r.pos.y}, r.pos + r.size, {r.pos.x, r.pos.y + r.size.y}};
+		return internal::contains(rectVerts, poly.pos);
+	}
+
+	// contains(c,poly)
+	// Checks if circle contains polygon
+	template <typename T>
+	inline constexpr bool contains(const circle<T>& c, const polygon<T>& poly)
+	{
+		for(uint32_t i = 0; i < poly.pos.size(); ++i)
+		{
+			if((poly.pos[i] - c.pos).mag2() > c.radius * c.radius)
+				return false;
+		}
+
+		return true;
+	}
+
+	// contains(t,poly)
+	// Checks if triangle contains polygon
+	template <typename T>
+	inline constexpr bool contains(const triangle<T>& t, const polygon<T>& poly)
+	{
+		std::vector<olc::v_2d<T>> triVerts{t.pos.begin(), t.pos.end()};
+		return internal::contains(triVerts, poly.pos);
+	}
+
+	// intersects(poly,poly)
+	// Get intersection points where polygon intersects with polygon
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& poly1, const polygon<T2>& poly2)
+	{
+		return {};
+	}
+
+	// intersects(poly,p)
+	// Get intersection points where polygon intersects with point
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& poly, const v_2d<T2>& p)
+	{
+		return {};
+	}
+
+	// intersects(poly,l)
+	// Get intersection points where polygon intersects with line segment
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& poly, const line<T2>& l)
+	{
+		return {};
+	}
+
+	// intersects(poly,r)
+	// Get intersection points where polygon intersects with rect
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& poly, const rect<T2>& r)
+	{
+		return {};
+	}
+
+	// intersects(poly,c)
+	// Get intersection points where polygon intersects with circle
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& poly, const circle<T2>& c)
+	{
+		return {};
+	}
+
+	// intersects(poly,t)
+	// Get intersection points where polygon intersects with triangle
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const polygon<T1>& poly, const triangle<T2>& t)
+	{
+		return {};
+	}
+
+	// intersects(p,poly)
+	// Get intersection points where point intersects with polygon
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const v_2d<T1>& p, const polygon<T2>& poly)
+	{
+		return {};
+	}
+
+	// intersects(l,poly)
+	// Get intersection points where line segment intersects with polygon
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const line<T1>& l, const polygon<T2>& poly)
+	{
+		return {};
+	}
+
+	// intersects(r,poly)
+	// Get intersection points where rect intersects with polygon
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const rect<T1>& r, const polygon<T2>& poly)
+	{
+		return {};
+	}
+
+	// intersects(c,poly)
+	// Get intersection points where circle intersects with polygon
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const circle<T1>& c, const polygon<T2>& poly)
+	{
+		return {};
+	}
+
+	// intersects(t,poly)
+	// Get intersection points where triangle intersects with polygon
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const triangle<T1>& t, const polygon<T2>& poly)
+	{
+		return {};
+	}
+
+	// intersects(q,poly)
+	// Get intersection points where ray intersects with polygon
+	template <typename T1, typename T2>
+	inline std::vector<olc::v_2d<T2>> intersects(const ray<T1>& q, const polygon<T2>& poly)
+	{
+		return {};
+	}
+
+	// reflect(q,poly)
+	// Optionally returns a ray reflected off a polygon if collision occurs
+	template <typename T1, typename T2>
+	inline std::optional<ray<T1>> reflect(const ray<T1>& q, const polygon<T2>& poly)
+	{
+		return {};
+	}
+
+	// closest(poly,p)
+	// Returns closest point on polygon to point
+	template<typename T1, typename T2>
+	inline olc::v_2d<T1> closest(const polygon<T1>& poly, const olc::v_2d<T2>& p)
+	{
+		return {};
 	}
 }
 

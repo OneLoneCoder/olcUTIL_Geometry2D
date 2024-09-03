@@ -197,12 +197,8 @@
 #error "olcUTIL_Geometry2D.h must be included BEFORE olcPixelGameEngine.h"
 #else
 
-#ifndef OLC_IGNORE_VEC2D
-#define OLC_IGNORE_VEC2D
-#endif
 
-#ifndef OLC_V2D_TYPE
-#define OLC_V2D_TYPE
+#if !defined(OLC_VECTOR2D_DEFINED)
 namespace olc
 {
 	/*
@@ -508,8 +504,7 @@ namespace olc
 	typedef v_2d<float> vf2d;
 	typedef v_2d<double> vd2d;
 }
-#else
-	#include "olcPixelGameEngine.h"
+#define OLC_VECTOR2D_DEFINED 1
 #endif
 
 

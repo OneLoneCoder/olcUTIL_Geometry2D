@@ -1,0 +1,97 @@
+name: Unit Tests and Code Coverage
+
+on:
+  push:
+    branches: [ "main" ]
+      
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+# 22 has gcc 11 and clang 14
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y cmake ninja-build \
+          libxrandr-dev libxinerama-dev \
+          libxcursor-dev libxi-dev libgl1-mesa-dev \
+          gcovr lcov
+
+# Do we need a very modern compiler?
+#    - name: Install clang18
+#      run: |
+#        wget https://apt.llvm.org/llvm.sh
+#        chmod a+x llvm.sh
+#        echo ""|sudo ./llvm.sh 18
+
+    - name: Create build directory
+      run: |
+        mkdir build
+        du -hs build
+
+# This can be used to login to the runner and debug
+#    - name: Setup tmate session
+#      uses: mxschmitt/action-tmate@v3
+
+    - name: Configure CMake
+      run: |
+        # The following settings are needed for clang-18
+        #export CC=/usr/bin/clang-18
+        #export CXX=/usr/bin/clang++-18
+        #export CXXFLAGS="-std=c++20"
+        cmake -S . -B build -G Ninja \
+         -DCMAKE_BUILD_TYPE=Debug \
+         -DENABLE_GEOM2D_UNIT_TESTS=ON \
+         -DBUILD_GMOCK=OFF \
+         -DINSTALL_GTEST=OFF
+
+    - name: Build with Ninja
+      run: ninja -C build
+
+    - name: Run tests
+      run: |
+        ninja -C build test
+
+    - name: Configure lcov to capture branch coverage
+      run: |
+        cp /etc/lcovrc /dev/shm
+        cat /dev/shm/lcovrc |sed  's/branch_coverage = 0/branch_coverage = 1/g' > ~/.lcovrc
+
+    - name: Collect coverage
+      run: |
+        ninja -C build cov
+
+# The following article describes how to publish code coverage to codecov.io:
+# https://dev.to/askrodney/cmake-coverage-example-with-github-actions-and-codecovio-5bjp
+# I can't get it to work, though. We can just download the html, for now.
+#    - name: Generate JSON coverage report
+#      working-directory: ./build
+#      run: |
+#        gcovr -r .. . --branches --cobertura > coverage.xml
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: TEST_Geometry2D_linux_amd64_artifact1
+        path: build/bin/TEST_Geometry2D
+
+    - name: Publish coverage artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: code-coverage
+        path: build/coverage
+  
+
+    # - name: Upload Release Asset  
+    #   uses: actions/upload-release-asset@v1  
+    #   env:  
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  
+    #   with:  
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing its `id`  
+    #     asset_path: ./build/ryzen_mon_glgui  
+    #     asset_name: ryzen_mon_glgui_artifact1.zip # Name of the asset to display on the release page  
+    #     asset_content_type: application/zip  

@@ -191,6 +191,7 @@
 #include <optional>
 #include <cassert>
 #include <array>
+#include <numbers>
 
 
 #ifdef PGE_VER
@@ -511,8 +512,6 @@ namespace olc
 
 namespace olc::utils::geom2d
 {
-	// Lemon Meringue
-	inline const double pi = 3.141592653589793238462643383279502884;
 
 	// Floating point error margin
 	inline const double epsilon = 0.001;
@@ -722,13 +721,13 @@ namespace olc::utils::geom2d
 		// Get area of circle
 		inline constexpr T area() const
 		{
-			return T(pi) * radius * radius;
+			return std::numbers::pi_v<T> * radius * radius;
 		}
 
 		// Get circumference of circle
 		inline constexpr T perimeter() const
 		{
-			return T(2.0 * pi) * radius;
+			return T(2.0) * std::numbers::pi_v<T> * radius;
 		}
 
 		// Get circumference of circle

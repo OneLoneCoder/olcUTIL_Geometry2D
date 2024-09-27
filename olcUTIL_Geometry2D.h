@@ -885,7 +885,7 @@ namespace olc::utils::geom2d
 	// closest(ray,p)
 	// Returns closest point on ray to point
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const ray<T1>& r, const olc::v_2d<T2>& p)
+	inline olc::v_2d<T1> closest(const ray<T1>& q, const olc::v_2d<T2>& p)
 	{
 		// TODO: implement
 		return p;
@@ -945,7 +945,7 @@ namespace olc::utils::geom2d
 	// closest(r,c)
 	// Returns closest point on rectangle to circle
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const rect<T1>& r, const circle<T2>& l)
+	inline olc::v_2d<T1> closest(const rect<T1>& r, const circle<T2>& c)
 	{
 		// TODO:
 		return {};
@@ -962,7 +962,7 @@ namespace olc::utils::geom2d
 	// closest(t,c)
 	// Returns closest point on triangle to circle
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const triangle<T1>& r, const circle<T2>& l)
+	inline olc::v_2d<T1> closest(const triangle<T1>& t, const circle<T2>& c)
 	{
 		// TODO:
 		return {};
@@ -974,7 +974,7 @@ namespace olc::utils::geom2d
 	// closest(l,t)
 	// Returns closest point on line to triangle
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const line<T1>& l, const triangle<T2>& c)
+	inline olc::v_2d<T1> closest(const line<T1>& l, const triangle<T2>& t)
 	{
 		// TODO:
 		return {};
@@ -983,7 +983,7 @@ namespace olc::utils::geom2d
 	// closest(r,t)
 	// Returns closest point on rectangle to triangle
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const rect<T1>& r, const triangle<T2>& l)
+	inline olc::v_2d<T1> closest(const rect<T1>& r, const triangle<T2>& t)
 	{
 		// TODO:
 		return {};
@@ -992,7 +992,7 @@ namespace olc::utils::geom2d
 	// closest(c,t)
 	// Returns closest point on circle to triangle
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const circle<T1>& c, const triangle<T2>& l)
+	inline olc::v_2d<T1> closest(const circle<T1>& c, const triangle<T2>& t)
 	{
 		// TODO:
 		return {};
@@ -1001,7 +1001,7 @@ namespace olc::utils::geom2d
 	// closest(t,t)
 	// Returns closest point on triangle to triangle
 	template<typename T1, typename T2>
-	inline olc::v_2d<T1> closest(const triangle<T1>& r, const triangle<T2>& l)
+	inline olc::v_2d<T1> closest(const triangle<T1>& t1, const triangle<T2>& t2)
 	{
 		// TODO:
 		return {};
@@ -1237,9 +1237,9 @@ namespace olc::utils::geom2d
 	// contains(c,l)
 	// Check if circle contains line segment
 	template<typename T1, typename T2>
-	inline constexpr bool contains(const circle<T1>& c1, const line<T2>& l)
+	inline constexpr bool contains(const circle<T1>& c, const line<T2>& l)
 	{
-		return contains(c1, l.start) && contains(c1, l.end);
+		return contains(c, l.start) && contains(c, l.end);
 	}
 
 	// contains(t,l)

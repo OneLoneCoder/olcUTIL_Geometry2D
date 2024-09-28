@@ -84,6 +84,12 @@ public:
 		olc::vf2d points[2]; // origin, direction
 	};
 
+	struct Polygon
+	{
+		std::vector<olc::vf2d> points;
+		Polygon(std::initializer_list<olc::vf2d> list) : points(list) {}
+	};
+
 	// Create desired shapes using a sequence of points
 	static auto make_internal(const Point& p)    { return p.points[0]; }
 	static auto make_internal(const Line& p)     { return line<float>{ p.points[0], p.points[1] }; }
@@ -91,9 +97,10 @@ public:
 	static auto make_internal(const Circle& p)   { return circle<float>{ p.points[0], (p.points[1]-p.points[0]).mag() }; }
 	static auto make_internal(const Triangle& p) { return triangle<float>{ p.points[0], p.points[1], p.points[2] }; }
 	static auto make_internal(const Ray& p)      { return ray<float>{ p.points[0], (p.points[1]-p.points[0]).norm() }; }
+	static auto make_internal(const Polygon& p) { return olc::utils::geom2d::createPolygon<float>(p.points); }
 
 	// The clever bit (and a bit new to me - jx9)
-	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray>;
+	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray, Polygon>;
 
 	
 
@@ -102,10 +109,10 @@ public:
 		const auto dispatch = overloads{
 			[](const auto& lhs, const auto& rhs)
 			{
-				return overlaps(make_internal(lhs), make_internal(rhs));
+				return  overlaps(make_internal(lhs), make_internal(rhs));
 			},
 
-			// Any combination of 'Ray' does not work because 'overlaps' is not implemented for it.
+			// any combination of 'ray' does not work because 'overlaps' is not implemented for it.
 			[](const Ray&, const auto&) { return false; },
 			[](const auto&, const Ray&) { return false; },
 			[](const Ray&, const Ray&)  { return false; }
@@ -214,6 +221,31 @@ public:
 		DrawLine(t.origin, t.origin+t.direction * 1000.0f, col, 0xF0F0F0F0);
 	}
 
+	void draw_internal(const Polygon& p, const olc::Pixel col)
+	{
+		const auto t = make_internal(p);
+
+		for (size_t i = 0; i < t.pos.size(); i++)
+		{
+			if (i == t.pos.size() - 1)
+			{
+				DrawLine(t.pos[i], t.pos[0], col);
+			}
+			else
+			{
+				DrawLine(t.pos[i], t.pos[i + 1], col);
+			}
+		}
+
+		if (bShowPolygonTriangles == true)
+		{
+			for (auto& triangle : t.triangles)
+			{
+				DrawTriangle(triangle.pos[0], triangle.pos[1], triangle.pos[2], col);
+			}
+		}
+	}
+
 	void DrawShape(const ShapeWrap& shape, const olc::Pixel col = olc::WHITE)
 	{
 		std::visit([&](const auto& x)
@@ -226,6 +258,7 @@ public:
 
 	size_t nSelectedShapeIndex = -1;
 	olc::vi2d vOldMousePos;
+	bool bShowPolygonTriangles = false;
 
 public: 
 	bool OnUserCreate() override
@@ -243,6 +276,7 @@ public:
 
 		vecShapes.push_back({ Triangle{{ {50.0f, 100.0f}, {10.0f, 150.0f}, {90.0f, 150.0f}} }});
 		vecShapes.push_back({ Triangle{{ {350.0f, 200.0f}, {500.0f, 150.0f}, {450.0f, 400.0f}} }});
+		vecShapes.push_back({ Polygon{{ {60.0f, 420.0f}, {10.0f, 370.0f}, {160.0f, 320.0f}, {210.f, 420.0f}, {160.0f, 470.0f}, {30.0f, 470.0f} }} });
 
 		return true;
 	}
@@ -250,6 +284,11 @@ public:
 	bool OnUserUpdate(float fElapsedTime) override
 	{
 		Clear(olc::VERY_DARK_BLUE);
+
+		if (GetKey(olc::Key::SPACE).bPressed == true)
+		{
+			bShowPolygonTriangles = !bShowPolygonTriangles;
+		}
 
 		olc::vf2d vMouseDelta = GetMousePos() - vOldMousePos;
 		vOldMousePos = GetMousePos();
@@ -259,7 +298,6 @@ public:
 
 		// Check for mouse hovered shapes
 		ShapeWrap mouse{ Point{olc::vf2d(GetMousePos())} };
-
 
 		if (nSelectedShapeIndex < vecShapes.size() && GetMouse(0).bHeld)
 		{
@@ -391,9 +429,6 @@ public:
 
 			for (size_t i = 0; i < vecShapes.size(); i++)
 			{
-				// Dont check against origin shape
-				if (i == last_hit_index) continue;
-
 				const auto& vTargetShape = vecShapes[i];
 				auto hit = CheckReflect(ray_laser, vTargetShape);
 				if (hit.has_value())
@@ -412,6 +447,7 @@ public:
 			{				
 				DrawLine(ray_laser.origin, ray_reflected.origin, olc::Pixel(rand() % 155 + 100, 0, 0));
 				ray_laser = ray_reflected;
+				ray_laser.origin += ray_reflected.direction * 0.01f;
 				ray_stop = false;
 				last_hit_index = closest_hit_index;
 				nBounces--;

@@ -344,6 +344,12 @@ namespace olc
 			return (*this) - 2.0 * (this->dot(n) * n);
 		}
 
+		inline constexpr auto distance(const v_2d& p) const
+		{
+			// Find the distance between two points
+			return std::sqrt(std::pow(this->x - p.x, 2) + std::pow(this->y - p.y, 2));
+		}
+
 		// Allow 'casting' from other v_2d types
 		template<class F>
 		inline constexpr operator v_2d<F>() const
@@ -1197,8 +1203,66 @@ namespace olc::utils::geom2d
 	}
 
 
+	// =========================================================================================================================
+	// constrain(shape, point) ===================================================================================================
 
+	template<typename T1, typename T2>
+	inline olc::v_2d<T2> constrain(const line<T1>& l, const olc::v_2d<T2>& p)
+	{
+		if (contains(l, p))
+		{
+			// The point is already on the line, no need to constrain
+			return p;
+		}
+		else {
+			// Constrain the point to the closest position on the line
+			return closest(l, p);
+		}
+	}
 
+	template<typename T1, typename T2>
+	inline olc::v_2d<T2> constrain(const circle<T1>& c, const olc::v_2d<T2>& p)
+	{
+		if (contains(c, p))
+		{
+			// The point is already inside the circle, no need to constrain
+			return p;
+		}
+		else {
+			// Constrain the point to the closest position inside the circle
+			return closest(c, p);
+		}
+	}
+
+	template<typename T1, typename T2>
+	inline olc::v_2d<T2> constrain(const rect<T1>& r, const olc::v_2d<T2>& p)
+	{
+		if (contains(r, p))
+		{
+			// The point is already inside the rect, no need to constrain
+			return p;
+		}
+		else {
+			// Constrain the point to the closest position inside the trct
+			return closest(r, p);
+		}
+
+	}
+
+	template<typename T1, typename T2>
+	inline olc::v_2d<T2> constrain(const triangle<T1>& t, const olc::v_2d<T2>& p)
+	{
+		if (contains(t, p))
+		{
+			// The point is already inside the triangle, no need to constrain
+			return p;
+		}
+		else {
+			// Constrain the point to the closest position inside the triangle
+			return closest(t, p);
+		}
+
+	}
 
 
 

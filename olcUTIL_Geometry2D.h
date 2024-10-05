@@ -899,8 +899,31 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const line<T1>& l1, const line<T2>& l2)
 	{
-		// TODO:
-		return {};
+		auto V1 = l1.end - l1.start;
+		auto V2 = l2.end - l2.start;
+		auto V21 = l2.start - l1.start;
+
+		auto v22 = V2.dot(V2);
+		auto v11 = V1.dot(V1);
+		auto v21 = V2.dot(V1);
+		auto v21_1 = V21.dot(V1);
+		auto v21_2 = V21.dot(V2);
+		auto denom = v21 * v21 - v22 * v11;
+
+		float s, t;
+		if (denom == 0.f) {
+			s = 0.f;
+			t = (v11 * s - v21_1) / v21;
+		}
+		else {
+			s = (v21_2 * v21 - v22 * v21_1) / denom;
+			t = (-v21_1 * v21 + v11 * v21_2) / denom;
+		}
+
+		s = std::max(std::min(s, 1.f), 0.f);
+		t = std::max(std::min(t, 1.f), 0.f);
+
+		return l1.start + s * V1;
 	}
 
 	// closest(r,l)

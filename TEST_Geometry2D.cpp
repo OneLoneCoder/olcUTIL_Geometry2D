@@ -130,6 +130,26 @@ public:
 		return std::visit(dispatch, s1, s2);
 	}
 
+	olc::vf2d CheckClosest(const ShapeWrap& s1, const ShapeWrap& s2)
+	{
+		const auto dispatch = overloads{
+			[](const auto& lhs, const auto& rhs)
+			{
+				return closest(make_internal(lhs), make_internal(rhs));
+			},
+			// Discard not implemented
+			[](const Ray&, const auto&) { return olc::vf2d{}; },
+			[](const auto&, const Ray&) {return olc::vf2d{}; },
+			[](const Ray&, const Ray&) {return olc::vf2d{}; },
+			[](const Line&, const Rect&) {return olc::vf2d{}; },
+			[](const Rect&, const Rect&) {return olc::vf2d{}; },
+			[](const Circle&, const Rect&) {return olc::vf2d{}; },
+			[](const Triangle&, const Rect&) {return olc::vf2d{}; }
+		};
+
+		return std::visit(dispatch, s1, s2);
+	}
+
 	std::vector<olc::vf2d> CheckIntersects(const ShapeWrap& s1, const ShapeWrap& s2)
 	{
 		const auto dispatch = overloads{
@@ -292,6 +312,7 @@ public:
 		std::vector<size_t> vContains;
 		std::vector<size_t> vOverlaps;
 		std::vector<olc::vf2d> vIntersections;
+		std::vector<olc::vf2d> vClosestsPoints;
 		if (nSelectedShapeIndex < vecShapes.size())
 		{
 			for (size_t i = 0; i < vecShapes.size(); i++)
@@ -308,6 +329,13 @@ public:
 
 				if (CheckOverlaps(vecShapes[nSelectedShapeIndex], vTargetShape))
 					vOverlaps.push_back(i);
+
+				olc::v_2d<float> c = CheckClosest(vecShapes[nSelectedShapeIndex], vTargetShape);
+				if (c.mag() > 0.f) {
+					vClosestsPoints.push_back(c);
+					vClosestsPoints.push_back(CheckClosest(vTargetShape, vecShapes[nSelectedShapeIndex]));
+				}
+				
 			}
 		}
 
@@ -366,6 +394,11 @@ public:
 		// Draw Intersections
 		for (const auto& intersection : vIntersections)
 			FillCircle(intersection, 3, olc::RED);
+
+		// Draw Closests
+		for (auto i = 0; i < vClosestsPoints.size()/2; i++)
+			DrawLine(vClosestsPoints[2 * i], vClosestsPoints[2 * i + 1], olc::DARK_GREY);
+
 
 		if (bRayMode)
 		{

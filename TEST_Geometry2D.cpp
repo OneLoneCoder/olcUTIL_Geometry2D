@@ -84,6 +84,11 @@ public:
 		olc::vf2d points[2]; // origin, direction
 	};
 
+	struct Polygon
+	{
+		std::vector<olc::vf2d> points; // vertices
+	};
+
 	// Create desired shapes using a sequence of points
 	static auto make_internal(const Point& p)    { return p.points[0]; }
 	static auto make_internal(const Line& p)     { return line<float>{ p.points[0], p.points[1] }; }
@@ -91,9 +96,10 @@ public:
 	static auto make_internal(const Circle& p)   { return circle<float>{ p.points[0], (p.points[1]-p.points[0]).mag() }; }
 	static auto make_internal(const Triangle& p) { return triangle<float>{ p.points[0], p.points[1], p.points[2] }; }
 	static auto make_internal(const Ray& p)      { return ray<float>{ p.points[0], (p.points[1]-p.points[0]).norm() }; }
+	static auto make_internal(const Polygon& p)  { return polygon<float>{ p.points }; }
 
 	// The clever bit (and a bit new to me - jx9)
-	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray>;
+	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray, Polygon>;
 
 	
 
@@ -214,6 +220,17 @@ public:
 		DrawLine(t.origin, t.origin+t.direction * 1000.0f, col, 0xF0F0F0F0);
 	}
 
+	void draw_internal(const Polygon& x, const olc::Pixel col)
+	{
+		const auto t = make_internal(x);
+
+		for(uint32_t i = 0; i < t.pos.size(); ++i)
+		{
+			uint32_t next = (i + 1) % t.pos.size();
+			DrawLine(t.pos[i], t.pos[next], col);
+		}
+	}
+
 	void DrawShape(const ShapeWrap& shape, const olc::Pixel col = olc::WHITE)
 	{
 		std::visit([&](const auto& x)
@@ -236,13 +253,17 @@ public:
 		vecShapes.push_back({ Line{ { { 80.0f, 10.0f }, {10.0f, 20.0f} } } });
 
 		vecShapes.push_back({ Rect{ { { 80.0f, 10.0f }, {110.0f, 60.0f} } } });
+		vecShapes.push_back({ Rect{ { { 80.0f, 10.0f }, {200.0f, 150.0f} } }});
 
 		vecShapes.push_back({ Circle{ { { 130.0f, 20.0f }, {170.0f, 20.0f} } } });
 		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {420.0f, 300.0f} } } });
 		vecShapes.push_back({ Circle{ { { 330.0f, 300.0f }, {400.0f, 300.0f} } } });
 
-		vecShapes.push_back({ Triangle{{ {50.0f, 100.0f}, {10.0f, 150.0f}, {90.0f, 150.0f}} }});
+		vecShapes.push_back({ Triangle{{ {50.0f, 100.0f}, {90.0f, 150.0f}, {10.0f, 150.0f}} }});
 		vecShapes.push_back({ Triangle{{ {350.0f, 200.0f}, {500.0f, 150.0f}, {450.0f, 400.0f}} }});
+
+		vecShapes.push_back({create_regular_convex_polygon(5, 50, {150, 150})});
+		vecShapes.push_back({create_regular_convex_polygon(8, 80, {300, 150})});
 
 		return true;
 	}
@@ -427,6 +448,20 @@ public:
 		
 
 		return true;
+	}
+
+	Polygon create_regular_convex_polygon(uint32_t point_count, float scale = 1, const olc::vf2d& translation = {})
+	{
+		Polygon polygon;
+		float angle = olc::utils::geom2d::pi * 2 / (float)point_count;
+
+		for(uint32_t i = 0; i < point_count; ++i)
+		{
+			olc::vf2d point = olc::vf2d{std::cos(angle * i), std::sin(angle * i)} * scale + translation;
+			polygon.points.push_back(point);
+		}
+
+		return polygon;
 	}
 };
 

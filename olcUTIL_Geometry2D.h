@@ -197,12 +197,8 @@
 #error "olcUTIL_Geometry2D.h must be included BEFORE olcPixelGameEngine.h"
 #else
 
-#ifndef OLC_IGNORE_VEC2D
-#define OLC_IGNORE_VEC2D
-#endif
 
-#ifndef OLC_V2D_TYPE
-#define OLC_V2D_TYPE
+#if !defined(OLC_VECTOR2D_DEFINED)
 namespace olc
 {
 	/*
@@ -508,8 +504,7 @@ namespace olc
 	typedef v_2d<float> vf2d;
 	typedef v_2d<double> vd2d;
 }
-#else
-	#include "olcPixelGameEngine.h"
+#define OLC_VECTOR2D_DEFINED 1
 #endif
 
 
@@ -1348,27 +1343,49 @@ namespace olc::utils::geom2d
 	// intersects(l,l)
 	// Get intersection points where line segment intersects with line segment
 	template<typename T1, typename T2>
-	inline std::vector<olc::v_2d<T2>> intersects(const line<T1>& l1, const line<T2>& l2)
+	inline std::vector<olc::v_2d<T2>> intersects(const line<T1>& l1, const line<T2>& l2, bool infinite = false)
 	{
-		float rd = l1.vector().cross(l2.vector());
-		if (rd == 0) return {}; // Parallel or Colinear TODO: Return two points
+		if (infinite)
+		{
+			float rd = l1.vector().cross(l2.vector());
+			if (rd == 0) return {}; // Parallel or Colinear TODO: Return two points
 
-		//Inverse rd product
-		rd = 1.f / rd;
+			//Inverse rd product
+			rd = 1.f / rd;
 
-		//Cross products: 
-		//rn = (b1b2 x b1a1)
-		float rn = ((l2.end.x - l2.start.x) * (l1.start.y - l2.start.y) - (l2.end.y - l2.start.y) * (l1.start.x - l2.start.x)) * rd;
-		//sn = (a1a2 x b1a1)
-		float sn = ((l1.end.x - l1.start.x) * (l1.start.y - l2.start.y) - (l1.end.y - l1.start.y) * (l1.start.x - l2.start.x)) * rd;
+			//Cross products: 
+			//rn = (b1b2 x b1a1)
+			float rn = ((l2.end.x - l2.start.x) * (l1.start.y - l2.start.y) - (l2.end.y - l2.start.y) * (l1.start.x - l2.start.x)) * rd;
+			//sn = (a1a2 x b1a1)
+			float sn = ((l1.end.x - l1.start.x) * (l1.start.y - l2.start.y) - (l1.end.y - l1.start.y) * (l1.start.x - l2.start.x)) * rd;
 
-		//Return the intersection depth
-		//if (d) *d = rn;
+			//Return the intersection depth
+			//if (d) *d = rn;
 
-		if (rn < 0.f || rn > 1.f || sn < 0.f || sn > 1.f)
-			return {}; // Intersection not within line segment
+			return { l1.start + rn * l1.vector() };
+		}
+		else
+		{
+			float rd = l1.vector().cross(l2.vector());
+			if (rd == 0) return {}; // Parallel or Colinear TODO: Return two points
 
-		return { l1.start + rn * l1.vector()};
+			//Inverse rd product
+			rd = 1.f / rd;
+
+			//Cross products: 
+			//rn = (b1b2 x b1a1)
+			float rn = ((l2.end.x - l2.start.x) * (l1.start.y - l2.start.y) - (l2.end.y - l2.start.y) * (l1.start.x - l2.start.x)) * rd;
+			//sn = (a1a2 x b1a1)
+			float sn = ((l1.end.x - l1.start.x) * (l1.start.y - l2.start.y) - (l1.end.y - l1.start.y) * (l1.start.x - l2.start.x)) * rd;
+
+			//Return the intersection depth
+			//if (d) *d = rn;
+
+			if (rn < 0.f || rn > 1.f || sn < 0.f || sn > 1.f)
+				return {}; // Intersection not within line segment
+
+			return { l1.start + rn * l1.vector() };
+		}
 	}
 
 	// intersects(r,l)
@@ -2222,8 +2239,35 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2, typename T3>
 	inline std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const triangle<T2>& t, const ray<T3>& q)
 	{
-		// TODO:
-		return std::nullopt;
+		const auto s1 = project(c, t.side(0), q);
+		const auto s2 = project(c, t.side(1), q);
+		const auto s3 = project(c, t.side(2), q);
+
+		std::vector<olc::v_2d<T2>> vAllIntersections;
+		if (s1.has_value()) vAllIntersections.push_back(s1.value());
+		if (s2.has_value()) vAllIntersections.push_back(s2.value());
+		if (s3.has_value()) vAllIntersections.push_back(s3.value());
+
+		if (vAllIntersections.size() == 0)
+		{
+			// No intersections at all, so
+			return std::nullopt;
+		}
+
+		// Find closest
+		double dClosest = std::numeric_limits<double>::max();
+		olc::v_2d<T2> vClosest;
+		for (const auto& vContact : vAllIntersections)
+		{
+			double dDistance = (vContact - q.origin).mag2();
+			if (dDistance < dClosest)
+			{
+				dClosest = dDistance;
+				vClosest = vContact;
+			}
+		}
+
+		return vClosest;
 	}
 
 

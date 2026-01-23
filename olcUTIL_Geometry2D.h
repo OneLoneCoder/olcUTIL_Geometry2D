@@ -887,8 +887,9 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const ray<T1>& r, const olc::v_2d<T2>& p)
 	{
-		// TODO: implement
-		return p;
+		auto normal = r.direction.norm();
+		auto dot = normal.dot(p - r.origin);
+		return r.origin + normal * dot;
 	}
 
 

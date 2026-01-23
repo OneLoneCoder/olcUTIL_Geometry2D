@@ -1,4 +1,4 @@
-/*
+﻿/*
 	OneLoneCoder - Geometry 2D v2.0
 	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	A collection of 2D Geometric primitives and functions to work with
@@ -899,8 +899,70 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const line<T1>& l1, const line<T2>& l2)
 	{
-		// TODO:
-		return {};
+		auto dirA = l1.end - l1.start;
+		auto dirB = l2.end - l2.start;
+
+		auto dotA = dirA.dot(dirA);
+		auto dotB = dirB.dot(dirB);
+		auto dotAB = dirA.dot(dirB);
+
+		auto diff = l2.start - l1.start;
+		// denominator for t & s parameters
+		auto denom = dotA * dotB - dotAB * dotAB;
+		T1 t, s;
+
+		if (denom > 1e-6f) {
+			// lines are not parallel (or almost parallel)
+			auto invDenom = 1.0f / denom;
+
+			// unnormalized parameters
+			auto t_nom = dotB * diff.dot(dirA) - dotAB * diff.dot(dirB);
+			auto s_nom = dotA * diff.dot(dirB) - dotAB * diff.dot(dirA);
+
+			t = t_nom * invDenom;
+			s = s_nom * invDenom;
+		}
+		else {
+			// Parallel or nearly parallel → project b.start onto A and clamp
+			t = diff.dot(dirA) / dotA;
+			s = 0;
+		}
+
+		if (t < 0) t = 0;
+		if (t > 1) t = 1;
+
+		// Candidate point on A
+		auto closestOnA = l1.start + (dirA * t);
+
+		// Find closest point on B to this candidate (and clamp to B)
+		auto t_B = (closestOnA - l2.start).dot(dirB) / dotB;
+		auto pointOnB = l2.start + (dirB * t_B);
+		
+		// Clamp to segment B
+		if (dotB > 1e-8f) {
+			auto s_clamped = (pointOnB - l2.start).dot(dirB) / dotB;
+			if (s_clamped < 0) s_clamped = 0;
+			if (s_clamped > 1) s_clamped = 1;
+			pointOnB = l2.start + (dirB * s_clamped);
+		}
+		else {
+			// degenerate B - just a point
+			pointOnB = l2.start;
+		}
+
+		// Final closest point on A is the projection of pointOnB back onto A
+		auto t_A = (pointOnB - l1.start).dot(dirA) / dotA;
+		closestOnA = l1.start + (dirA * t_A);
+
+		// Last clamp (handles degenerate cases and numerical issues)
+		T1 t_final = 0;
+		if (dotA > 1e-8f) {
+			t_final = (closestOnA - l1.start).dot(dirA) / dotA;
+			if (t_final < 0) t_final = 0;
+			if (t_final > 1) t_final = 1;
+		}
+
+		return l1.start + (dirA * t_final);
 	}
 
 	// closest(r,l)

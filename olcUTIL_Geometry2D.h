@@ -887,8 +887,8 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2>
 	inline olc::v_2d<T1> closest(const ray<T1>& r, const olc::v_2d<T2>& p)
 	{
-		// TODO: implement
-		return p;
+		double u = std::max(0.0, double(r.direction.dot(p - r.origin)) / r.direction.mag2());
+		return r.origin + u * r.direction;
 	}
 
 

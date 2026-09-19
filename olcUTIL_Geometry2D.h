@@ -192,8 +192,13 @@
 #include <cassert>
 #include <array>
 
-#ifndef OLC_V2D_TYPE
-#define OLC_V2D_TYPE
+
+#ifdef PGE_VER
+#error "olcUTIL_Geometry2D.h must be included BEFORE olcPixelGameEngine.h"
+#else
+
+
+#if !defined(OLC_VECTOR2D_DEFINED)
 namespace olc
 {
 	/*
@@ -499,8 +504,7 @@ namespace olc
 	typedef v_2d<float> vf2d;
 	typedef v_2d<double> vd2d;
 }
-#else
-	#include "olcPixelGameEngine.h"
+#define OLC_VECTOR2D_DEFINED 1
 #endif
 
 
@@ -950,10 +954,9 @@ namespace olc::utils::geom2d
 	// closest(c,c)
 	// Returns closest point on circle to circle
 	template<typename T1, typename T2>
-	olc::v_2d<T1> closest(const circle<T1>& c, const circle<T2>& l)
+	olc::v_2d<T1> closest(const circle<T1>& c1, const circle<T2>& c2)
 	{
-		// TODO:
-		return {};
+		return closest(c1, c2.pos);
 	}
 
 	// closest(t,c)
@@ -1310,27 +1313,49 @@ namespace olc::utils::geom2d
 	// intersects(l,l)
 	// Get intersection points where line segment intersects with line segment
 	template<typename T1, typename T2>
-	std::vector<olc::v_2d<T2>> intersects(const line<T1>& l1, const line<T2>& l2)
+	inline std::vector<olc::v_2d<T2>> intersects(const line<T1>& l1, const line<T2>& l2, bool infinite = false)
 	{
-		float rd = l1.vector().cross(l2.vector());
-		if (rd == 0) return {}; // Parallel or Colinear TODO: Return two points
+		if (infinite)
+		{
+			float rd = l1.vector().cross(l2.vector());
+			if (rd == 0) return {}; // Parallel or Colinear TODO: Return two points
 
-		//Inverse rd product
-		rd = 1.f / rd;
+			//Inverse rd product
+			rd = 1.f / rd;
 
-		//Cross products: 
-		//rn = (b1b2 x b1a1)
-		float rn = ((l2.end.x - l2.start.x) * (l1.start.y - l2.start.y) - (l2.end.y - l2.start.y) * (l1.start.x - l2.start.x)) * rd;
-		//sn = (a1a2 x b1a1)
-		float sn = ((l1.end.x - l1.start.x) * (l1.start.y - l2.start.y) - (l1.end.y - l1.start.y) * (l1.start.x - l2.start.x)) * rd;
+			//Cross products: 
+			//rn = (b1b2 x b1a1)
+			float rn = ((l2.end.x - l2.start.x) * (l1.start.y - l2.start.y) - (l2.end.y - l2.start.y) * (l1.start.x - l2.start.x)) * rd;
+			//sn = (a1a2 x b1a1)
+			float sn = ((l1.end.x - l1.start.x) * (l1.start.y - l2.start.y) - (l1.end.y - l1.start.y) * (l1.start.x - l2.start.x)) * rd;
 
-		//Return the intersection depth
-		//if (d) *d = rn;
+			//Return the intersection depth
+			//if (d) *d = rn;
 
-		if (rn < 0.f || rn > 1.f || sn < 0.f || sn > 1.f)
-			return {}; // Intersection not within line segment
+			return { l1.start + rn * l1.vector() };
+		}
+		else
+		{
+			float rd = l1.vector().cross(l2.vector());
+			if (rd == 0) return {}; // Parallel or Colinear TODO: Return two points
 
-		return { l1.start + rn * l1.vector()};
+			//Inverse rd product
+			rd = 1.f / rd;
+
+			//Cross products: 
+			//rn = (b1b2 x b1a1)
+			float rn = ((l2.end.x - l2.start.x) * (l1.start.y - l2.start.y) - (l2.end.y - l2.start.y) * (l1.start.x - l2.start.x)) * rd;
+			//sn = (a1a2 x b1a1)
+			float sn = ((l1.end.x - l1.start.x) * (l1.start.y - l2.start.y) - (l1.end.y - l1.start.y) * (l1.start.x - l2.start.x)) * rd;
+
+			//Return the intersection depth
+			//if (d) *d = rn;
+
+			if (rn < 0.f || rn > 1.f || sn < 0.f || sn > 1.f)
+				return {}; // Intersection not within line segment
+
+			return { l1.start + rn * l1.vector() };
+		}
 	}
 
 	// intersects(r,l)
@@ -2184,8 +2209,35 @@ namespace olc::utils::geom2d
 	template<typename T1, typename T2, typename T3>
 	std::optional<olc::v_2d<T2>> project(const circle<T1>& c, const triangle<T2>& t, const ray<T3>& q)
 	{
-		// TODO:
-		return std::nullopt;
+		const auto s1 = project(c, t.side(0), q);
+		const auto s2 = project(c, t.side(1), q);
+		const auto s3 = project(c, t.side(2), q);
+
+		std::vector<olc::v_2d<T2>> vAllIntersections;
+		if (s1.has_value()) vAllIntersections.push_back(s1.value());
+		if (s2.has_value()) vAllIntersections.push_back(s2.value());
+		if (s3.has_value()) vAllIntersections.push_back(s3.value());
+
+		if (vAllIntersections.size() == 0)
+		{
+			// No intersections at all, so
+			return std::nullopt;
+		}
+
+		// Find closest
+		double dClosest = std::numeric_limits<double>::max();
+		olc::v_2d<T2> vClosest;
+		for (const auto& vContact : vAllIntersections)
+		{
+			double dDistance = (vContact - q.origin).mag2();
+			if (dDistance < dClosest)
+			{
+				dClosest = dDistance;
+				vClosest = vContact;
+			}
+		}
+
+		return vClosest;
 	}
 
 
@@ -2457,7 +2509,8 @@ namespace olc::utils::geom2d
 			if (s2 < 0)
 				return { q.origin + q.direction * s1 };
 
-			return { q.origin + q.direction * std::min(s1, s2) };
+			const auto [min_s, max_s] = std::minmax(s1, s2);
+			return { q.origin + q.direction * min_s, q.origin + q.direction * max_s };
 		}
 	}
 
@@ -2493,3 +2546,5 @@ namespace olc::utils::geom2d
 		return internal::filter_duplicate_points(intersections);
 	}
 }
+
+#endif // PGE_VER
